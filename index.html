@@ -457,6 +457,7 @@
     .col-icon { width: 54px; }
     .col-id { width: 128px; }
     .col-level { width: 82px; }
+    .col-location { width: 150px; }
     .col-source { width: 118px; }
     .col-action { width: 92px; text-align: right; }
 
@@ -786,7 +787,7 @@
       </section>
 
       <section class="side-section">
-        <h3>常用欄位</h3>
+        <h3>位置篩選</h3>
         <div class="side-grid" id="fieldButtons"></div>
       </section>
     </aside>
@@ -847,7 +848,7 @@
       </section>
 
       <div class="notice" id="notice">
-        <strong>正在同步：</strong>從 Google Sheets 讀取資料中……
+        <strong>正在同步：</strong>讀取資料中……
       </div>
 
       <section class="data-panel" id="database">
@@ -859,7 +860,7 @@
         <div class="table-wrap" id="tableWrap">
           <div class="loading">
             <div class="loader"></div>
-            正在從 Google Sheets 讀取道具資料……
+            正在讀取道具資料……
           </div>
         </div>
 
@@ -886,7 +887,9 @@
   <a class="backtop" href="#top" aria-label="回到頂部">📜</a>
 
   <footer>
-    此道具百科內容僅限於貓貓谷使用，如有錯誤或遺漏請即時反饋。
+    如果您喜歡,請分享我們的網址，謝謝!<br>
+    製作人: 柚子糖、新手問題教官。<br><br>
+    ©2026-2026
   </footer>
 
   <script>
@@ -896,7 +899,7 @@
      * =========================================================
      */
     const SHEET_ID = "1aXcf9XOxWsEB3Mne1-wMOpBIr1QLc7lJ-6hDyQda1eY";
-    const DATA_SHEETS = ["一般道具", "蘋果道具", "Boss掉落物"];
+    const DATA_SHEETS = ["一般道具", "蘋果道具", "Boss掉落物", "喵幣道具"];
 
     /**
      * 最後更新時間來源：
@@ -911,7 +914,7 @@
      * const LAST_UPDATED_CELL_RANGE = "D1";
      */
     const LAST_UPDATED_CELL_SHEET = "首頁";
-    const LAST_UPDATED_CELL_RANGE = "N22";
+    const LAST_UPDATED_CELL_RANGE = "B2";
 
     /**
      * 如果你想直接抓取 Google Sheets「插入到儲存格內」的圖示，
@@ -976,7 +979,7 @@
     const descKeys = ["說明", "描述", "介紹", "效果", "用途", "備註", "取得方式", "來源", "掉落", "說明文字", "description", "effect", "note"];
     const idKeys = ["id", "ID", "編號", "物品ID", "道具ID", "itemid", "item id"];
     const levelKeys = ["等級", "需求等級", "Lv", "LV", "level", "Level"];
-    const fieldKeySuggestions = ["取得方式", "來源", "效果", "備註", "用途", "掉落", "數量", "價格", "類型", "分類"];
+    // 左側位置篩選會自動讀取 SHEET 中「位置」欄位的所有值。
 
     function escapeHtml(value) {
       return String(value ?? "")
@@ -1083,7 +1086,11 @@
     }
 
     function getItemPurpose(item) {
-      return findByKeys(item, ["用途", "使用方法", "使用用途", "use", "usage"]) || "";
+      return findByKeys(item, ["使用方式", "使用方法", "用途", "使用用途", "use", "usage"]) || "";
+    }
+
+    function getItemLocation(item) {
+      return findByKeys(item, ["位置", "所在位置", "地點", "location", "place"]) || "";
     }
 
     function getItemImage(item) {
@@ -1427,16 +1434,18 @@
         });
       });
 
-      const allKeys = new Set();
-      state.allItems.forEach(item => Object.keys(item.fields).forEach(key => allKeys.add(key)));
-      const useful = fieldKeySuggestions
-        .filter(suggestion => Array.from(allKeys).some(key => keyMatch(key, [suggestion])));
+      const locations = Array.from(new Set(
+        state.allItems
+          .map(item => getItemLocation(item))
+          .map(value => normalizeText(value))
+          .filter(Boolean)
+      )).sort((a, b) => a.localeCompare(b, "zh-Hant"));
 
       els.fieldButtons.innerHTML = [
-        `<button class="side-btn ${state.fieldFilter === "" ? "active" : ""}" type="button" data-field="">不限欄位</button>`,
-        ...useful.map(field => `
-          <button class="side-btn ${state.fieldFilter === field ? "active" : ""}" type="button" data-field="${escapeHtml(field)}">
-            ${escapeHtml(field)}
+        `<button class="side-btn ${state.fieldFilter === "" ? "active" : ""}" type="button" data-field="">不限位置</button>`,
+        ...locations.map(location => `
+          <button class="side-btn ${state.fieldFilter === location ? "active" : ""}" type="button" data-field="${escapeHtml(location)}">
+            ${escapeHtml(location)}
           </button>
         `)
       ].join("");
@@ -1458,8 +1467,8 @@
         if (state.activeSheet !== "全部" && item.sheet !== state.activeSheet) return false;
 
         if (state.fieldFilter) {
-          const matchedKey = Object.keys(item.fields).find(key => keyMatch(key, [state.fieldFilter]));
-          if (!matchedKey || !item.fields[matchedKey]) return false;
+          const location = normalizeText(getItemLocation(item));
+          if (location !== state.fieldFilter) return false;
         }
 
         if (query && !getSearchBlob(item).includes(query)) return false;
@@ -1522,7 +1531,8 @@
             <tr>
               <th class="col-icon">圖示</th>
               <th class="col-name">道具名稱</th>
-              <th>用途</th>
+              <th>使用方式</th>
+              <th class="col-location">位置</th>
               <th class="col-source">分類</th>
               <th class="col-action">詳情</th>
             </tr>
@@ -1546,6 +1556,7 @@
     function createRowHtml(item) {
       const name = getItemName(item);
       const purpose = getItemPurpose(item);
+      const location = getItemLocation(item);
       const image = getItemImage(item);
       const icon = image
         ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(name)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'), {className: 'placeholder', textContent: '🎒'}))">`
@@ -1558,8 +1569,9 @@
             <div class="item-name">${escapeHtml(name)}</div>
           </td>
           <td>
-            <div class="item-name">${escapeHtml(purpose || "尚無用途資料")}</div>
+            <div class="item-name">${escapeHtml(purpose || "尚無使用方式資料")}</div>
           </td>
+          <td class="col-location">${location ? `<span class="tag">${escapeHtml(location)}</span>` : `<span style="color: var(--muted-2);">—</span>`}</td>
           <td class="col-source"><span class="tag">${escapeHtml(item.sheet)}</span></td>
           <td class="col-action"><button class="mini-btn" type="button" data-open-detail="${escapeHtml(item.id)}">詳情</button></td>
         </tr>

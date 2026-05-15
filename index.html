@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>貓貓谷道具百科｜資料庫列表版</title>
-  <meta name="description" content="貓貓谷道具百科：資料庫列表版。" />
+  <meta name="description" content="貓貓谷道具百科：Google Sheets 自動同步的資料庫列表版。" />
   <meta name="theme-color" content="#f6a62d" />
 
   <style>
@@ -748,7 +748,6 @@
       <nav class="top-links" aria-label="上方選單">
         <a class="top-link" href="#database">資料列表</a>
         <a class="top-link" href="#filters">分類篩選</a>
-        <a class="top-link" href="#help">同步說明</a>
       </nav>
     </div>
   </header>
@@ -766,13 +765,6 @@
         <h3>常用欄位</h3>
         <div class="side-grid" id="fieldButtons"></div>
       </section>
-
-      <section class="side-section" id="help">
-        <h3>GitHub Pages 提醒</h3>
-        <div style="color: var(--muted); font-size: 13px; font-weight: 750; line-height: 1.75;">
-          本頁不需要後端，直接上傳到 GitHub Pages 即可。若讀不到資料，請確認 Google Sheets 共用權限為「知道連結的任何人：檢視者」。
-        </div>
-      </section>
     </aside>
 
     <main class="main">
@@ -785,7 +777,7 @@
           <div class="hero-badge" id="syncState">同步中</div>
         </div>
         <p class="hero-desc">
-          顯示方式改為資料庫風格：左側分類、右側列表、關鍵字搜尋、排序、分頁與詳細資料視窗。資料來源仍然是你的 Google Sheets。
+          此道具百科內容僅限於貓貓谷使用，如有錯誤或遺漏請即時反饋。
         </p>
       </section>
 
@@ -869,8 +861,7 @@
   <a class="backtop" href="#top" aria-label="回到頂部">📜</a>
 
   <footer>
-    貓貓谷道具百科｜Google Sheets 自動同步｜資料庫列表版<br>
-    修改試算表後，重新整理本頁或按「重新同步」即可更新。
+    此道具百科內容僅限於貓貓谷使用，如有錯誤或遺漏請即時反饋。
   </footer>
 
   <script>
@@ -881,6 +872,21 @@
      */
     const SHEET_ID = "1hCeb4EhqOXCqudzbLX68m6wXCOR1eCoVeM-WLvK7HXM";
     const DATA_SHEETS = ["一般道具", "蘋果道具", "Boss掉落物"];
+
+    /**
+     * 最後更新時間來源：
+     * 從 Google Sheets 指定儲存格讀取。
+     *
+     * 預設讀取「首頁」分頁的 B2。
+     * 你可以在 Google Sheets 的 B2 放入日期時間，例如：
+     * 2026/05/16 18:30:00
+     *
+     * 若你想改成其他位置，例如「首頁!D1」：
+     * const LAST_UPDATED_CELL_SHEET = "首頁";
+     * const LAST_UPDATED_CELL_RANGE = "D1";
+     */
+    const LAST_UPDATED_CELL_SHEET = "首頁";
+    const LAST_UPDATED_CELL_RANGE = "B2";
 
     /**
      * =========================================================
@@ -1091,6 +1097,98 @@
       }).filter(item => Object.keys(item.fields).length > 0);
     }
 
+
+    function formatTaiwanDateTime(dateLike) {
+      const date = dateLike instanceof Date ? dateLike : new Date(dateLike);
+      if (Number.isNaN(date.getTime())) return "";
+
+      return date.toLocaleString("zh-TW", {
+        timeZone: "Asia/Taipei",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      });
+    }
+
+    function parseGvizDateValue(value) {
+      const text = String(value ?? "").trim();
+
+      // Google Visualization API 有時會回傳 Date(yyyy,m,d,h,m,s)
+      // 注意：月份是 0 起算，所以不需要再 -1。
+      const match = text.match(/^Date\((\d{4}),(\d{1,2}),(\d{1,2})(?:,(\d{1,2}),(\d{1,2}),(\d{1,2}))?\)$/);
+      if (match) {
+        const [, year, month, day, hour = "0", minute = "0", second = "0"] = match;
+        return new Date(Number(year), Number(month), Number(day), Number(hour), Number(minute), Number(second));
+      }
+
+      return null;
+    }
+
+    function formatCellDateTime(cell) {
+      if (!cell) return "";
+
+      // f 通常是 Google Sheets 依照儲存格格式顯示出來的文字。
+      // 如果你把該格設為日期與時間格式，優先使用 f 最接近表格上的顯示。
+      const formatted = normalizeText(cell.f || "");
+      if (formatted) return formatted;
+
+      const raw = cell.v ?? "";
+      const parsedGvizDate = parseGvizDateValue(raw);
+      if (parsedGvizDate) return formatTaiwanDateTime(parsedGvizDate);
+
+      const normalDate = new Date(raw);
+      if (!Number.isNaN(normalDate.getTime())) return formatTaiwanDateTime(normalDate);
+
+      return normalizeText(raw);
+    }
+
+    function loadCellByJsonp(sheetName, cellRange) {
+      return new Promise((resolve, reject) => {
+        const callbackName = `__catpedia_cell_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const timeoutMs = 15000;
+
+        const script = document.createElement("script");
+
+        const timer = setTimeout(() => {
+          cleanup();
+          reject(new Error(`讀取最後更新時間儲存格「${sheetName}!${cellRange}」逾時`));
+        }, timeoutMs);
+
+        function cleanup() {
+          clearTimeout(timer);
+          delete window[callbackName];
+          script.remove();
+        }
+
+        window[callbackName] = (response) => {
+          cleanup();
+
+          if (!response || response.status === "error") {
+            const message = response?.errors?.map(err => err.detailed_message || err.message).join("；") || "Google Sheets 回傳錯誤";
+            reject(new Error(`最後更新時間讀取失敗：${message}`));
+            return;
+          }
+
+          const cell = response.table?.rows?.[0]?.c?.[0] || null;
+          resolve(formatCellDateTime(cell));
+        };
+
+        const tqx = encodeURIComponent(`out:json;responseHandler:${callbackName}`);
+        script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(sheetName)}&range=${encodeURIComponent(cellRange)}&headers=0&tqx=${tqx}`;
+        script.async = true;
+        script.onerror = () => {
+          cleanup();
+          reject(new Error(`無法讀取最後更新時間儲存格「${sheetName}!${cellRange}」`));
+        };
+
+        document.body.appendChild(script);
+      });
+    }
+
     function loadSheetByJsonp(sheetName) {
       return new Promise((resolve, reject) => {
         const callbackName = `__catpedia_db_${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -1161,7 +1259,19 @@
 
       if (items.length > 0) {
         els.syncState.textContent = "同步完成";
-        els.notice.innerHTML = `<strong>同步完成：</strong>目前讀到 ${items.length} 筆資料。若你剛修改試算表，請按「重新同步」或重新整理網頁。`;
+
+        try {
+          const lastUpdatedText = await loadCellByJsonp(LAST_UPDATED_CELL_SHEET, LAST_UPDATED_CELL_RANGE);
+          if (lastUpdatedText) {
+            els.notice.innerHTML = `<strong>同步完成：</strong>最後更新時間 ${escapeHtml(lastUpdatedText)}`;
+          } else {
+            els.notice.innerHTML = `<strong>同步完成：</strong>最後更新時間未填寫，請檢查 ${escapeHtml(LAST_UPDATED_CELL_SHEET)}!${escapeHtml(LAST_UPDATED_CELL_RANGE)}`;
+          }
+        } catch (error) {
+          console.warn(error);
+          els.notice.innerHTML = `<strong>同步完成：</strong>最後更新時間讀取失敗，請檢查 ${escapeHtml(LAST_UPDATED_CELL_SHEET)}!${escapeHtml(LAST_UPDATED_CELL_RANGE)}`;
+        }
+
         applyFilters();
       } else {
         els.syncState.textContent = "同步失敗";
@@ -1288,11 +1398,9 @@
           <thead>
             <tr>
               <th class="col-icon">圖示</th>
-              <th class="col-id">ID</th>
               <th>名稱 / 說明</th>
-              <th class="col-level">Lv.</th>
               <th class="col-source">分類</th>
-              <th class="col-action">操作</th>
+              <th class="col-action">詳情</th>
             </tr>
           </thead>
           <tbody>
@@ -1313,8 +1421,6 @@
 
     function createRowHtml(item) {
       const name = getItemName(item);
-      const id = getItemId(item);
-      const level = getItemLevel(item);
       const desc = getItemDescription(item);
       const image = getItemImage(item);
       const icon = image
@@ -1324,12 +1430,10 @@
       return `
         <tr>
           <td class="col-icon"><div class="icon-box">${icon}</div></td>
-          <td class="col-id">${id ? `<span class="tag">ID ${escapeHtml(id)}</span>` : `<span style="color: var(--muted-2);">—</span>`}</td>
           <td>
             <div class="item-name">${escapeHtml(name)}</div>
             <div class="item-desc">${escapeHtml(desc || "尚無說明，點擊詳情查看完整欄位。")}</div>
           </td>
-          <td class="col-level">${level ? `<span class="tag">Lv.${escapeHtml(level)}</span>` : `<span style="color: var(--muted-2);">—</span>`}</td>
           <td class="col-source"><span class="tag">${escapeHtml(item.sheet)}</span></td>
           <td class="col-action"><button class="mini-btn" type="button" data-open-detail="${escapeHtml(item.id)}">詳情</button></td>
         </tr>

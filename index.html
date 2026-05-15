@@ -715,6 +715,8 @@
       box-shadow: 0 10px 24px rgba(58, 42, 27, .20);
       font-size: 24px;
       text-decoration: none;
+      cursor: pointer;
+      font-family: inherit;
     }
 
     .backtop:hover { text-decoration: none; transform: translateY(-2px); }
@@ -770,10 +772,6 @@
         <span class="logo-mark">🍁</span>
         <span>貓貓谷道具百科</span>
       </div>
-      <nav class="top-links" aria-label="上方選單">
-        <a class="top-link" href="#database">資料列表</a>
-        <a class="top-link" href="#filters">分類篩選</a>
-      </nav>
     </div>
   </header>
 
@@ -848,7 +846,7 @@
       </section>
 
       <div class="notice" id="notice">
-        <strong>正在同步：</strong>從 Google Sheets 讀取資料中……
+        <strong>正在同步：</strong>讀取更新數據中……
       </div>
 
       <section class="data-panel" id="database">
@@ -860,7 +858,7 @@
         <div class="table-wrap" id="tableWrap">
           <div class="loading">
             <div class="loader"></div>
-            正在從 Google Sheets 讀取道具資料……
+            正在讀取道具資料……
           </div>
         </div>
 
@@ -884,7 +882,7 @@
     <div class="modal-body" id="modalBody"></div>
   </dialog>
 
-  <a class="backtop" href="#top" aria-label="回到頂部">📜</a>
+  <button class="backtop" id="backTopBtn" type="button" aria-label="回到頁面最上方">📜</button>
 
   <footer>
     如果您喜歡,請分享我們的網址，謝謝!<br>
@@ -1353,8 +1351,8 @@
       state.page = 1;
 
       els.syncState.textContent = "同步中";
-      els.notice.innerHTML = "<strong>正在同步：</strong>從 Google Sheets 讀取資料中……";
-      els.tableWrap.innerHTML = `<div class="loading"><div class="loader"></div>正在從 Google Sheets 讀取道具資料……</div>`;
+      els.notice.innerHTML = "<strong>正在同步：</strong>讀取更新數據中……";
+      els.tableWrap.innerHTML = `<div class="loading"><div class="loader"></div>正在讀取道具資料……</div>`;
       els.listSummary.textContent = "讀取中";
 
       let items = [];
@@ -1752,6 +1750,14 @@
 
       if (outside) els.dialog.close();
     });
+
+
+    const backTopBtn = document.querySelector("#backTopBtn");
+    if (backTopBtn) {
+      backTopBtn.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    }
 
     loadAllSheets();
   </script>

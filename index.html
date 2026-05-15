@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>貓貓谷道具百科</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', '微軟正黑體', 'Microsoft JhengHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh; color: #e0e0e0; padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header {
+            text-align: center; padding: 40px 20px;
+            background: rgba(255, 255, 255, 0.05); border-radius: 20px;
+            margin-bottom: 30px; backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        header h1 {
+            font-size: 2.5em; margin-bottom: 10px;
+            background: linear-gradient(135deg, #f5af19, #f12711);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .sheet-section {
+            background: rgba(255, 255, 255, 0.05); border-radius: 16px;
+            padding: 24px; margin-bottom: 32px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .sheet-section h2 {
+            font-size: 1.5em; margin-bottom: 16px;
+            color: #f5af19; border-bottom: 2px solid rgba(245, 175, 25, 0.3);
+            padding-bottom: 8px;
+        }
+        .search-input {
+            width: 100%; padding: 14px 20px; border-radius: 50px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08); color: #fff;
+            font-size: 1em; outline: none; margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .search-input:focus {
+            border-color: #f5af19;
+            box-shadow: 0 0 20px rgba(245, 175, 25, 0.2);
+        }
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            background: rgba(245, 175, 25, 0.15);
+            color: #f5af19; padding: 12px 16px;
+            text-align: left; font-weight: 600;
+            white-space: nowrap;
+        }
+        td {
+            padding: 10px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        tr:hover td { background: rgba(255, 255, 255, 0.05); }
+        .loading { text-align: center; padding: 40px; color: #a0a0a0; }
+        .error { text-align: center; padding: 40px; color: #f12711; }
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🐱 貓貓谷道具百科</h1>
+            <p>資料來源：Google 試算表</p>
+        </header>
+
+        <input type="text" class="search-input" id="searchInput" placeholder="🔍 搜尋道具...">
+
+        <div id="sheetsContainer"></div>
+
+        <div class="footer">
+            <p>資料更新時間：<span id="lastUpdated"></span></p>
+        </div>
+    </div>
+
+    <script>
+        // ★★★ 請將下方換成你的 Google Sheets API 金鑰 ★★★
+        const API_KEY = '556860372489-58ofp51n5i8s565kefe91f69urdg8uf4.apps.googleusercontent.com';
+        const SPREADSHEET_ID = '1hCeb4EhqOXCqudzbLX68m6wXCOR1eCoVeM-WLvK7HXM';
+        const SHEET_NAMES = ['一般道具', '蘋果道具', 'Boss掉落物'];
+
+        const sheetsContainer = document.getElementById('sheetsContainer');
+        const searchInput = document.getElementById('searchInput');
+        const lastUpdatedEl = document.getElementById('lastUpdated');
+
+        // 取得單一工作表資料
+        async function fetchSheetData(sheetName) {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(sheetName)}?key=${API_KEY}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            return data.values || [];
+        }
+
+        // 渲染表格
+        function renderTable(sheetName, rows, container) {
+            if (rows.length === 0) {
+                container.innerHTML += `<div class="sheet-section"><h2>📋 ${sheetName}</h2><p>尚無資料。</p></div>`;
+                return;
+            }
+            const headers = rows[0];
+            const dataRows = rows.slice(1);
+
+            let html = `<div class="sheet-section" data-sheet="${sheetName}">`;
+            html += `<h2>📋 ${sheetName}</h2>`;
+            html += `<div class="table-wrapper"><table><thead><tr>`;
+            headers.forEach(h => { html += `<th>${h}</th>`; });
+            html += `</tr></thead><tbody>`;
+            dataRows.forEach(row => {
+                html += `<tr>`;
+                headers.forEach((_, i) => {
+                    html += `<td>${row[i] || ''}</td>`;
+                });
+                html += `</tr>`;
+            });
+            html += `</tbody></table></div></div>`;
+            container.innerHTML += html;
+        }
+
+        // 載入所有工作表
+        async function loadAllSheets() {
+            sheetsContainer.innerHTML = '<div class="loading">⏳ 正在載入資料...</div>';
+            try {
+                let html = '';
+                for (const sheetName of SHEET_NAMES) {
+                    try {
+                        const rows = await fetchSheetData(sheetName);
+                        renderTable(sheetName, rows, { innerHTML: '' });
+                        // 重新組合 HTML（因為 renderTable 會用 innerHTML +=）
+                    } catch (err) {
+                        html += `<div class="sheet-section"><h2>📋 ${sheetName}</h2><p class="error">載入失敗：${err.message}</p></div>`;
+                    }
+                }
+                // 重新載入（避免 renderTable 的 innerHTML 操作問題）
+                sheetsContainer.innerHTML = '';
+                for (const sheetName of SHEET_NAMES) {
+                    try {
+                        const rows = await fetchSheetData(sheetName);
+                        const tempDiv = document.createElement('div');
+                        renderTable(sheetName, rows, tempDiv);
+                        sheetsContainer.appendChild(tempDiv.firstChild);
+                    } catch (err) {
+                        const div = document.createElement('div');
+                        div.className = 'sheet-section';
+                        div.innerHTML = `<h2>📋 ${sheetName}</h2><p class="error">載入失敗：${err.message}</p>`;
+                        sheetsContainer.appendChild(div);
+                    }
+                }
+                lastUpdatedEl.textContent = new Date().toLocaleString('zh-TW');
+            } catch (err) {
+                sheetsContainer.innerHTML = `<div class="error">❌ 無法載入資料：${err.message}</div>`;
+            }
+        }
+
+        // 搜尋功能
+        searchInput.addEventListener('input', function() {
+            const keyword = this.value.toLowerCase().trim();
+            const sections = document.querySelectorAll('.sheet-section');
+            sections.forEach(section => {
+                if (!keyword) { section.style.display = ''; return; }
+                const rows = section.querySelectorAll('tbody tr');
+                let hasMatch = false;
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    if (text.includes(keyword)) { row.style.display = ''; hasMatch = true; }
+                    else { row.style.display = 'none'; }
+                });
+                section.style.display = hasMatch ? '' : 'none';
+            });
+        });
+
+        // 啟動載入
+        loadAllSheets();
+    </script>
+</body>
+</html>

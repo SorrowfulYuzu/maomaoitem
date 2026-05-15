@@ -897,7 +897,7 @@
      * =========================================================
      */
     const SHEET_ID = "1aXcf9XOxWsEB3Mne1-wMOpBIr1QLc7lJ-6hDyQda1eY";
-    const DATA_SHEETS = ["一般道具", "蘋果道具", "Boss掉落物", "喵幣道具"];
+    let DATA_SHEETS = ["一般道具", "蘋果道具", "Boss掉落物", "喵幣道具", "蘋果碎片兌換道具", "萌獸"];
 
     /**
      * 最後更新時間來源：
@@ -1327,13 +1327,14 @@
 
           resolve({
             items,
+            sheetNames: Array.isArray(response.sheetNames) ? response.sheetNames : [],
             lastUpdated: response.lastUpdated || "",
             generatedAt: response.generatedAt || ""
           });
         };
 
         const separator = cleanEndpoint.includes("?") ? "&" : "?";
-        script.src = `${cleanEndpoint}${separator}callback=${encodeURIComponent(callbackName)}&t=${Date.now()}`;
+        script.src = `${cleanEndpoint}${separator}callback=${encodeURIComponent(callbackName)}&refresh=1&t=${Date.now()}`;
         script.async = true;
         script.onerror = () => {
           cleanup();
@@ -1361,6 +1362,9 @@
       if (APPS_SCRIPT_DATA_ENDPOINT.trim()) {
         try {
           appsScriptPayload = await loadAppsScriptDataByJsonp(APPS_SCRIPT_DATA_ENDPOINT);
+          if (Array.isArray(appsScriptPayload?.sheetNames) && appsScriptPayload.sheetNames.length > 0) {
+            DATA_SHEETS = appsScriptPayload.sheetNames;
+          }
           items = appsScriptPayload?.items || [];
         } catch (error) {
           state.errors.push(error.message || "Apps Script 資料讀取失敗。請確認 Apps Script 已重新部署，權限為「任何人」，且 Web App URL 結尾是 /exec。");

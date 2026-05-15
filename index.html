@@ -870,7 +870,7 @@
      * 基本設定
      * =========================================================
      */
-    const SHEET_ID = "1hCeb4EhqOXCqudzbLX68m6wXCOR1eCoVeM-WLvK7HXM";
+    const SHEET_ID = "1aXcf9XOxWsEB3Mne1-wMOpBIr1QLc7lJ-6hDyQda1eY";
     const DATA_SHEETS = ["一般道具", "蘋果道具", "Boss掉落物"];
 
     /**
@@ -895,7 +895,7 @@
      * 留空時：使用原本的 Google Sheets 公開資料讀取方式，只能讀文字/網址。
      * 填入時：改由 Apps Script 回傳資料，能讀取儲存格內的 CellImage 圖示。
      */
-    const APPS_SCRIPT_DATA_ENDPOINT = "https://script.google.com/macros/s/AKfycbz0Lx5zq1o_S9OP-YMqQzlTvxpe3smlxATPnEbUbwadxigpGxxEafIbsa9XV41rYFU/exec";
+    const APPS_SCRIPT_DATA_ENDPOINT = "https://script.google.com/macros/s/AKfycbxNsKBjGdoByijmqLBS6GwjEULK9g9JRX5OLFdB3cmjBp_EX9QsUM-Yegz4_gFJUs3Ipg/exec";
 
     // Apps Script 第一次冷啟動、或需要轉換儲存格圖片時會比較慢。
     // 原本 20 秒容易誤判逾時，這裡改成 60 秒。
@@ -1055,6 +1055,10 @@
         .map(([, value]) => value);
 
       return values.slice(0, 2).join("｜");
+    }
+
+    function getItemPurpose(item) {
+      return findByKeys(item, ["用途", "使用方法", "使用用途", "use", "usage"]) || "";
     }
 
     function getItemImage(item) {
@@ -1492,7 +1496,7 @@
           <thead>
             <tr>
               <th class="col-icon">圖示</th>
-              <th>名稱 / 說明</th>
+              <th>用途</th>
               <th class="col-source">分類</th>
               <th class="col-action">詳情</th>
             </tr>
@@ -1515,7 +1519,7 @@
 
     function createRowHtml(item) {
       const name = getItemName(item);
-      const desc = getItemDescription(item);
+      const purpose = getItemPurpose(item);
       const image = getItemImage(item);
       const icon = image
         ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(name)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'), {className: 'placeholder', textContent: '🎒'}))">`
@@ -1525,8 +1529,7 @@
         <tr>
           <td class="col-icon"><div class="icon-box">${icon}</div></td>
           <td>
-            <div class="item-name">${escapeHtml(name)}</div>
-            <div class="item-desc">${escapeHtml(desc || "尚無說明，點擊詳情查看完整欄位。")}</div>
+            <div class="item-name">${escapeHtml(purpose || "尚無用途資料")}</div>
           </td>
           <td class="col-source"><span class="tag">${escapeHtml(item.sheet)}</span></td>
           <td class="col-action"><button class="mini-btn" type="button" data-open-detail="${escapeHtml(item.id)}">詳情</button></td>
@@ -1607,12 +1610,14 @@
       els.modalSub.textContent = `${item.sheet}${id ? " / ID " + id : ""}${level ? " / Lv." + level : ""}`;
       els.modalIcon.innerHTML = icon;
 
-      const rows = Object.entries(item.fields).map(([key, value]) => `
-        <tr>
-          <th>${escapeHtml(key)}</th>
-          <td>${formatDetailValue(value)}</td>
-        </tr>
-      `).join("");
+      const rows = Object.entries(item.fields)
+        .filter(([key]) => !keyMatch(key, imageKeys))
+        .map(([key, value]) => `
+          <tr>
+            <th>${escapeHtml(key)}</th>
+            <td>${formatDetailValue(value)}</td>
+          </tr>
+        `).join("");
 
       els.modalBody.innerHTML = `
         <table class="detail-table">

@@ -3,655 +3,675 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>貓貓谷道具百科</title>
-  <meta name="description" content="貓貓谷道具百科：由 Google Sheets 自動同步的道具查詢網站。" />
+  <title>貓貓谷道具百科｜資料庫列表版</title>
+  <meta name="description" content="貓貓谷道具百科：Google Sheets 自動同步的資料庫列表版。" />
   <meta name="theme-color" content="#f6a62d" />
 
   <style>
     :root {
-      --bg-0: #fff8e7;
-      --bg-1: #fff1c5;
-      --bg-2: #ffe3a3;
-      --ink: #3d2a1b;
-      --muted: #7a6046;
-      --line: rgba(94, 55, 16, .16);
-      --card: rgba(255, 255, 255, .86);
-      --card-solid: #fffdf7;
-      --orange: #f6a62d;
-      --orange-2: #ff7b22;
-      --gold: #ffd45c;
-      --green: #4caf50;
-      --red: #e35b4f;
-      --shadow: 0 18px 45px rgba(113, 69, 17, .15);
-      --shadow-soft: 0 10px 28px rgba(113, 69, 17, .10);
-      --radius-xl: 28px;
-      --radius-lg: 20px;
-      --radius-md: 14px;
-      --max: 1180px;
-      --font: ui-rounded, "Microsoft JhengHei", "PingFang TC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --bg: #f5f1e8;
+      --paper: #fffdf7;
+      --paper-2: #fff7e6;
+      --line: #ded1ba;
+      --line-soft: rgba(107, 74, 38, .16);
+      --text: #2f251b;
+      --muted: #786a59;
+      --muted-2: #9b8971;
+      --brand: #f6a62d;
+      --brand-2: #d86b18;
+      --deep: #3a2a1b;
+      --deep-2: #4b3725;
+      --green: #408f4b;
+      --red: #bc4b43;
+      --blue: #3977ba;
+      --shadow: 0 12px 28px rgba(58, 42, 27, .12);
+      --radius: 12px;
+      --font: "Microsoft JhengHei", "PingFang TC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
-    html {
-      scroll-behavior: smooth;
-    }
+    html { scroll-behavior: smooth; }
 
     body {
       margin: 0;
       font-family: var(--font);
-      color: var(--ink);
+      color: var(--text);
       background:
-        radial-gradient(circle at 10% 5%, rgba(255, 211, 92, .55), transparent 28rem),
-        radial-gradient(circle at 90% 0%, rgba(255, 123, 34, .22), transparent 28rem),
-        linear-gradient(135deg, var(--bg-0), var(--bg-1) 46%, #fffaf0);
+        radial-gradient(circle at 10% 0%, rgba(246, 166, 45, .16), transparent 30rem),
+        radial-gradient(circle at 90% 20%, rgba(216, 107, 24, .10), transparent 26rem),
+        var(--bg);
       min-height: 100vh;
-      overflow-x: hidden;
     }
 
-    body::before,
-    body::after {
-      content: "";
-      position: fixed;
-      inset: auto;
-      z-index: -1;
-      pointer-events: none;
-      opacity: .34;
-      filter: blur(.2px);
+    a { color: #a34f12; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: linear-gradient(180deg, #3e2c1c, #2d2117);
+      color: #fff4d6;
+      border-bottom: 3px solid var(--brand);
+      box-shadow: 0 8px 24px rgba(34, 22, 12, .18);
     }
 
-    body::before {
-      width: 420px;
-      height: 420px;
-      right: -160px;
-      bottom: -110px;
-      background:
-        radial-gradient(circle, rgba(255, 166, 45, .35), transparent 60%),
-        repeating-linear-gradient(45deg, rgba(255,255,255,.25) 0 8px, transparent 8px 18px);
-      border-radius: 50%;
-    }
-
-    body::after {
-      width: 290px;
-      height: 290px;
-      left: -90px;
-      top: 260px;
-      background: radial-gradient(circle, rgba(76, 175, 80, .16), transparent 65%);
-      border-radius: 50%;
-    }
-
-    a {
-      color: #b45309;
-      text-decoration: none;
-    }
-
-    a:hover {
-      text-decoration: underline;
-    }
-
-    .site {
-      width: min(var(--max), calc(100% - 32px));
+    .topbar-inner {
+      width: min(1420px, calc(100% - 24px));
       margin: 0 auto;
-    }
-
-    .hero {
-      position: relative;
-      padding: 54px 0 30px;
-    }
-
-    .hero-card {
-      position: relative;
-      overflow: hidden;
-      border: 1px solid rgba(255, 255, 255, .82);
-      background:
-        linear-gradient(135deg, rgba(255, 255, 255, .84), rgba(255, 247, 214, .86)),
-        radial-gradient(circle at 85% 12%, rgba(255, 212, 92, .55), transparent 22rem);
-      border-radius: var(--radius-xl);
-      box-shadow: var(--shadow);
-      padding: 34px;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 24px;
+      min-height: 58px;
+      display: flex;
       align-items: center;
+      gap: 14px;
     }
 
-    .hero-card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background-image:
-        radial-gradient(circle, rgba(116, 73, 22, .09) 1.2px, transparent 1.2px);
-      background-size: 18px 18px;
-      mask-image: linear-gradient(90deg, black, transparent 72%);
-      pointer-events: none;
-    }
-
-    .hero-main {
-      position: relative;
-      z-index: 1;
-    }
-
-    .eyebrow {
+    .logo {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 7px 12px;
+      gap: 10px;
+      font-weight: 950;
+      letter-spacing: .02em;
+      white-space: nowrap;
+    }
+
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #ffd45a, #f58422);
+      color: #4a2a09;
+      box-shadow: inset 0 -4px 10px rgba(69, 36, 6, .18);
+    }
+
+    .top-links {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-left: auto;
+    }
+
+    .top-link {
+      color: #fff0c5;
+      border: 1px solid rgba(255,255,255,.14);
       border-radius: 999px;
-      background: rgba(255, 212, 92, .52);
-      border: 1px solid rgba(132, 82, 22, .12);
-      color: #7c4a0e;
+      padding: 7px 11px;
+      font-size: 13px;
       font-weight: 800;
+      background: rgba(255,255,255,.06);
+    }
+
+    .top-link:hover {
+      text-decoration: none;
+      background: rgba(255,255,255,.12);
+    }
+
+    .layout {
+      width: min(1420px, calc(100% - 24px));
+      margin: 18px auto 54px;
+      display: grid;
+      grid-template-columns: 286px minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 76px;
+      max-height: calc(100vh - 92px);
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 253, 247, .88);
+      box-shadow: var(--shadow);
+    }
+
+    .side-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 14px;
+      background: linear-gradient(180deg, var(--paper-2), #fff);
+      border-bottom: 1px solid var(--line);
+      color: #5c3d17;
+      font-size: 15px;
+      font-weight: 950;
+    }
+
+    .side-section {
+      padding: 12px 14px 14px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .side-section:last-child { border-bottom: 0; }
+
+    .side-section h3 {
+      margin: 0 0 9px;
+      color: #6c4b26;
       font-size: 13px;
       letter-spacing: .04em;
     }
 
-    h1 {
-      margin: 16px 0 10px;
-      font-size: clamp(34px, 5vw, 64px);
-      line-height: 1.02;
-      letter-spacing: -0.05em;
+    .side-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
     }
 
-    .subtitle {
-      margin: 0;
-      max-width: 780px;
-      color: var(--muted);
-      font-size: 17px;
-      line-height: 1.8;
-      font-weight: 600;
+    .side-btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #4d3c2a;
+      border-radius: 999px;
+      padding: 7px 9px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: .14s ease;
     }
 
-    .hero-mascot {
-      position: relative;
-      z-index: 1;
-      width: min(220px, 30vw);
-      aspect-ratio: 1;
-      border-radius: 34% 66% 58% 42% / 44% 35% 65% 56%;
+    .side-btn:hover {
+      border-color: #d78b24;
+      color: #9c4e0d;
+      transform: translateY(-1px);
+    }
+
+    .side-btn.active {
+      background: #3a2a1b;
+      border-color: #3a2a1b;
+      color: #fff1c6;
+    }
+
+    .main {
+      min-width: 0;
+    }
+
+    .hero {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
       background:
-        radial-gradient(circle at 42% 36%, #fff 0 5%, transparent 5.2%),
-        radial-gradient(circle at 62% 36%, #fff 0 5%, transparent 5.2%),
-        radial-gradient(circle at 42% 37%, #33200f 0 2.1%, transparent 2.3%),
-        radial-gradient(circle at 62% 37%, #33200f 0 2.1%, transparent 2.3%),
-        radial-gradient(circle at 51% 52%, #ff8a5c 0 4%, transparent 4.2%),
-        linear-gradient(145deg, #ffc64b, #ff8a25);
-      border: 7px solid rgba(255, 255, 255, .68);
-      box-shadow: inset 0 -18px 28px rgba(109, 59, 9, .12), var(--shadow-soft);
+        radial-gradient(circle at 96% 12%, rgba(246, 166, 45, .22), transparent 22rem),
+        linear-gradient(180deg, #fffdf7, #fff7e6);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hero-head {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
       display: grid;
-      place-items: end center;
-      padding-bottom: 30px;
-      transform: rotate(3deg);
-    }
-
-    .hero-mascot::before,
-    .hero-mascot::after {
-      content: "";
-      position: absolute;
-      top: -24px;
-      width: 62px;
-      height: 62px;
-      border-radius: 16px 48px 16px 48px;
-      background: #ffb02c;
-      border: 7px solid rgba(255, 255, 255, .68);
-      z-index: -1;
-    }
-
-    .hero-mascot::before {
-      left: 22px;
-      transform: rotate(-30deg);
-    }
-
-    .hero-mascot::after {
-      right: 22px;
-      transform: rotate(20deg) scaleX(-1);
-    }
-
-    .hero-mascot span {
-      font-size: 44px;
-      transform: translateY(8px);
-      filter: drop-shadow(0 5px 0 rgba(255,255,255,.45));
-    }
-
-    .panel {
-      background: rgba(255, 255, 255, .72);
-      border: 1px solid rgba(255, 255, 255, .8);
-      border-radius: var(--radius-xl);
-      box-shadow: var(--shadow-soft);
-      backdrop-filter: blur(12px);
-    }
-
-    .toolbar {
-      position: sticky;
-      top: 12px;
-      z-index: 20;
-      padding: 14px;
-      margin: 18px 0 22px;
-      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
       gap: 12px;
+      align-items: center;
     }
 
-    .search-row {
+    .crumb {
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(25px, 3vw, 38px);
+      letter-spacing: -.04em;
+      line-height: 1.12;
+    }
+
+    .hero-badge {
+      border: 1px solid rgba(216, 107, 24, .24);
+      background: rgba(255, 212, 90, .34);
+      border-radius: 999px;
+      padding: 8px 12px;
+      color: #7b4310;
+      font-weight: 950;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    .hero-desc {
+      margin: 0;
+      padding: 13px 20px;
+      color: var(--muted);
+      line-height: 1.75;
+      font-weight: 700;
+      background: rgba(255, 255, 255, .46);
+    }
+
+    .control-panel {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 253, 247, .92);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .control-title {
+      padding: 11px 14px;
+      background: linear-gradient(180deg, #fff8e5, #fff);
+      border-bottom: 1px solid var(--line);
+      font-weight: 950;
+      color: #654415;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .controls {
+      padding: 14px;
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto auto;
+      grid-template-columns: minmax(220px, 1fr) 170px 150px 130px auto;
       gap: 10px;
       align-items: center;
     }
 
-    .search {
+    .field {
       position: relative;
+      min-width: 0;
     }
 
-    .search input {
+    .field input,
+    .field select {
       width: 100%;
-      min-height: 52px;
-      border: 1px solid rgba(113, 69, 17, .17);
-      border-radius: 999px;
-      padding: 0 18px 0 48px;
-      background: rgba(255, 255, 255, .92);
-      color: var(--ink);
-      font-size: 16px;
-      font-weight: 700;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #fff;
+      color: var(--text);
+      padding: 0 11px;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 750;
       outline: none;
-      box-shadow: inset 0 2px 0 rgba(255,255,255,.7);
     }
 
-    .search input:focus {
-      border-color: rgba(246, 166, 45, .76);
-      box-shadow: 0 0 0 4px rgba(246,166,45,.16);
+    .field input { padding-left: 36px; }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(246, 166, 45, .18);
     }
 
     .search-icon {
       position: absolute;
-      left: 18px;
+      left: 11px;
       top: 50%;
       transform: translateY(-50%);
-      font-size: 18px;
-      pointer-events: none;
-      opacity: .72;
+      opacity: .7;
     }
 
     .btn {
-      min-height: 48px;
-      border: 0;
-      border-radius: 999px;
-      padding: 0 17px;
-      background: linear-gradient(135deg, var(--gold), var(--orange));
-      color: #57320b;
+      min-height: 42px;
+      border: 1px solid #c9791e;
+      border-radius: 9px;
+      padding: 0 12px;
+      color: #4d2d08;
+      background: linear-gradient(180deg, #ffd86c, #f5a22b);
       font: inherit;
-      font-weight: 900;
+      font-weight: 950;
       cursor: pointer;
-      box-shadow: 0 10px 22px rgba(246, 166, 45, .20);
-      transition: transform .15s ease, filter .15s ease, box-shadow .15s ease;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.5);
       white-space: nowrap;
     }
 
-    .btn:hover {
-      transform: translateY(-1px);
-      filter: saturate(1.05);
-      text-decoration: none;
-    }
-
-    .btn:active {
-      transform: translateY(0);
-      box-shadow: none;
-    }
+    .btn:hover { filter: saturate(1.05); }
+    .btn:active { transform: translateY(1px); }
 
     .btn.ghost {
-      background: rgba(255,255,255,.85);
-      border: 1px solid rgba(113, 69, 17, .14);
-      box-shadow: none;
+      border-color: var(--line);
+      background: #fff;
+      color: #5a4630;
     }
 
-    .tabs {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .tab {
-      border: 1px solid rgba(113, 69, 17, .14);
-      background: rgba(255, 255, 255, .70);
-      color: var(--muted);
-      border-radius: 999px;
-      padding: 10px 14px;
-      font-weight: 900;
-      cursor: pointer;
-      transition: .16s ease;
-    }
-
-    .tab:hover {
-      background: rgba(255, 255, 255, .96);
-      color: var(--ink);
-    }
-
-    .tab.active {
-      background: #3d2a1b;
-      color: #fff7d5;
-      border-color: #3d2a1b;
-      box-shadow: 0 10px 24px rgba(61,42,27,.14);
-    }
-
-    .status {
+    .stats {
+      padding: 0 14px 14px;
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin: 0 0 22px;
+      gap: 10px;
     }
 
     .stat {
-      padding: 16px;
-      border-radius: var(--radius-lg);
-      background: rgba(255,255,255,.66);
-      border: 1px solid rgba(255,255,255,.82);
-      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--line-soft);
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      min-width: 0;
     }
 
     .stat b {
       display: block;
-      font-size: 26px;
-      letter-spacing: -0.04em;
+      font-size: 22px;
+      letter-spacing: -.04em;
+      color: #3c2a19;
     }
 
     .stat span {
+      display: block;
+      margin-top: 2px;
+      font-size: 12px;
       color: var(--muted);
-      font-weight: 800;
-      font-size: 13px;
+      font-weight: 850;
     }
 
     .notice {
-      border-radius: var(--radius-lg);
-      padding: 16px 18px;
-      border: 1px solid rgba(113, 69, 17, .14);
-      background: rgba(255, 255, 255, .76);
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fffdf7;
       color: var(--muted);
-      line-height: 1.65;
-      font-weight: 700;
-      margin: 0 0 22px;
+      padding: 12px 14px;
+      line-height: 1.7;
+      font-weight: 750;
+      box-shadow: var(--shadow);
     }
 
-    .notice strong {
-      color: var(--ink);
-    }
+    .notice strong { color: var(--text); }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 16px;
-      padding-bottom: 64px;
-    }
-
-    .item-card {
-      grid-column: span 4;
-      min-height: 260px;
-      display: flex;
-      flex-direction: column;
-      position: relative;
+    .data-panel {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 253, 247, .94);
+      box-shadow: var(--shadow);
       overflow: hidden;
-      border-radius: var(--radius-xl);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.96), rgba(255, 248, 226, .88));
-      border: 1px solid rgba(255,255,255,.86);
-      box-shadow: var(--shadow-soft);
-      isolation: isolate;
-      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
     }
 
-    .item-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 20px 44px rgba(113, 69, 17, .16);
-      border-color: rgba(246, 166, 45, .38);
-    }
-
-    .item-card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(circle at 100% 0%, rgba(255, 212, 92, .35), transparent 38%),
-        radial-gradient(circle at 0% 100%, rgba(76, 175, 80, .12), transparent 42%);
-      z-index: -1;
-    }
-
-    .card-top {
-      padding: 16px 16px 0;
-      display: grid;
-      grid-template-columns: 76px minmax(0, 1fr);
-      gap: 14px;
+    .data-title {
+      padding: 11px 14px;
+      background: linear-gradient(180deg, #fff8e5, #fff);
+      border-bottom: 1px solid var(--line);
+      display: flex;
       align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: #654415;
+      font-weight: 950;
     }
+
+    .table-wrap {
+      overflow: auto;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #f3eadb;
+      color: #60431e;
+      font-size: 13px;
+      text-align: left;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--line);
+      padding: 9px 10px;
+    }
+
+    td {
+      border-bottom: 1px solid rgba(107, 74, 38, .12);
+      padding: 9px 10px;
+      vertical-align: middle;
+      line-height: 1.55;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    tbody tr:nth-child(even) { background: #fffaf0; }
+    tbody tr:hover { background: #fff0cf; }
+
+    .col-icon { width: 54px; }
+    .col-id { width: 128px; }
+    .col-level { width: 82px; }
+    .col-source { width: 118px; }
+    .col-action { width: 92px; text-align: right; }
 
     .icon-box {
-      width: 76px;
-      height: 76px;
+      width: 36px;
+      height: 36px;
       display: grid;
       place-items: center;
-      border-radius: 22px;
-      background:
-        linear-gradient(145deg, #fff, #fff2c1);
-      border: 1px solid rgba(113, 69, 17, .12);
-      box-shadow: inset 0 -7px 18px rgba(113, 69, 17, .06);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fffdf7;
       overflow: hidden;
+      box-shadow: inset 0 -3px 8px rgba(58, 42, 27, .06);
     }
 
     .icon-box img {
-      max-width: 88%;
-      max-height: 88%;
+      max-width: 92%;
+      max-height: 92%;
       object-fit: contain;
       image-rendering: auto;
-      filter: drop-shadow(0 5px 6px rgba(63, 38, 10, .16));
     }
 
     .placeholder {
-      font-size: 34px;
-    }
-
-    .card-title {
-      min-width: 0;
-    }
-
-    .source-pill {
-      display: inline-flex;
-      width: fit-content;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 9px;
-      border-radius: 999px;
-      background: rgba(255, 212, 92, .45);
-      color: #7c4a0e;
-      border: 1px solid rgba(113, 69, 17, .10);
-      font-size: 12px;
-      font-weight: 900;
-      margin-bottom: 7px;
-    }
-
-    .card-title h3 {
-      margin: 0;
       font-size: 20px;
-      line-height: 1.25;
-      letter-spacing: -0.03em;
-      word-break: break-word;
+      opacity: .86;
     }
 
-    .desc {
-      margin: 14px 16px 0;
+    .item-name {
+      font-weight: 950;
+      color: #2c2117;
+    }
+
+    .item-desc {
+      margin-top: 2px;
+      max-width: 720px;
       color: var(--muted);
-      font-size: 14px;
-      line-height: 1.65;
-      font-weight: 700;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    .fields {
-      margin: 16px;
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .field-chip {
-      max-width: 100%;
-      padding: 7px 9px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.72);
-      border: 1px solid rgba(113, 69, 17, .11);
-      color: #5d442d;
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 750;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .field-chip em {
-      color: #9a6b21;
-      font-style: normal;
-    }
-
-    .card-actions {
-      margin-top: auto;
-      padding: 0 16px 16px;
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
+    .tag {
+      display: inline-flex;
       align-items: center;
-    }
-
-    .small-muted {
-      color: rgba(122, 96, 70, .78);
+      gap: 4px;
+      border-radius: 999px;
+      border: 1px solid rgba(107, 74, 38, .14);
+      background: #fffaf0;
+      padding: 4px 8px;
+      color: #694719;
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 950;
+      white-space: nowrap;
     }
 
-    .empty {
-      grid-column: 1 / -1;
-      text-align: center;
-      padding: 56px 24px;
-      border-radius: var(--radius-xl);
-      background: rgba(255,255,255,.70);
-      border: 1px dashed rgba(113, 69, 17, .20);
-      color: var(--muted);
-      font-weight: 800;
-      line-height: 1.8;
+    .mini-btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #4f3c28;
+      border-radius: 8px;
+      padding: 6px 8px;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 950;
+      cursor: pointer;
+      white-space: nowrap;
     }
 
-    .loading {
-      grid-column: 1 / -1;
-      display: grid;
-      place-items: center;
-      min-height: 260px;
-      color: var(--muted);
-      font-weight: 900;
+    .mini-btn:hover {
+      border-color: var(--brand);
+      color: #984b0c;
+    }
+
+    .pager {
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       gap: 12px;
+      border-top: 1px solid var(--line);
+      background: #fffdf7;
+      flex-wrap: wrap;
+    }
+
+    .page-info {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .page-buttons {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .page-btn {
+      min-width: 36px;
+      min-height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: #4a3826;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .page-btn:hover { border-color: var(--brand); }
+    .page-btn.active {
+      background: #3a2a1b;
+      color: #fff1c6;
+      border-color: #3a2a1b;
+    }
+
+    .page-btn:disabled {
+      cursor: not-allowed;
+      opacity: .45;
+    }
+
+    .loading,
+    .empty,
+    .error {
+      padding: 42px 18px;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 850;
+      line-height: 1.75;
     }
 
     .loader {
-      width: 46px;
-      height: 46px;
+      width: 38px;
+      height: 38px;
       border-radius: 50%;
       border: 5px solid rgba(246, 166, 45, .18);
-      border-top-color: var(--orange);
+      border-top-color: var(--brand);
+      margin: 0 auto 12px;
       animation: spin 1s linear infinite;
     }
 
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error {
+      color: #7c332e;
+      background: #fff7f5;
+      text-align: left;
     }
 
-    .load-more-wrap {
-      display: none;
-      justify-content: center;
-      margin: -36px 0 72px;
-    }
-
-    .load-more-wrap.show {
-      display: flex;
+    .error code {
+      background: rgba(188, 75, 67, .08);
+      padding: 2px 6px;
+      border-radius: 6px;
     }
 
     dialog {
-      width: min(760px, calc(100% - 28px));
+      width: min(860px, calc(100% - 24px));
       border: 0;
       padding: 0;
-      border-radius: 28px;
-      background: var(--card-solid);
-      color: var(--ink);
-      box-shadow: 0 32px 80px rgba(48, 28, 6, .32);
+      border-radius: 14px;
+      background: #fffdf7;
+      color: var(--text);
+      box-shadow: 0 34px 80px rgba(28, 18, 10, .35);
       overflow: hidden;
     }
 
     dialog::backdrop {
-      background: rgba(44, 26, 5, .48);
-      backdrop-filter: blur(5px);
+      background: rgba(34, 22, 12, .52);
+      backdrop-filter: blur(4px);
     }
 
     .modal-head {
-      padding: 22px;
-      background:
-        radial-gradient(circle at 100% 0, rgba(255, 212, 92, .42), transparent 34%),
-        linear-gradient(135deg, #fff8e7, #ffe9b0);
       display: grid;
-      grid-template-columns: 74px minmax(0, 1fr) auto;
-      gap: 14px;
+      grid-template-columns: 48px minmax(0, 1fr) auto;
       align-items: center;
-      border-bottom: 1px solid rgba(113,69,17,.12);
+      gap: 12px;
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      background:
+        radial-gradient(circle at 100% 0, rgba(246, 166, 45, .23), transparent 20rem),
+        linear-gradient(180deg, #fff8e5, #fff);
     }
 
     .modal-head h2 {
       margin: 0;
-      font-size: 26px;
-      letter-spacing: -.04em;
+      font-size: 24px;
+      letter-spacing: -.03em;
       word-break: break-word;
     }
 
+    .modal-sub {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .close {
+      width: 38px;
+      height: 38px;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 10px;
+      font-size: 22px;
+      font-weight: 950;
+      cursor: pointer;
+    }
+
     .modal-body {
-      padding: 20px 22px 24px;
-      max-height: 68vh;
+      padding: 16px;
+      max-height: 72vh;
       overflow: auto;
     }
 
     .detail-table {
+      min-width: 0;
       width: 100%;
-      border-collapse: collapse;
+      border: 1px solid var(--line-soft);
+      border-radius: 12px;
       overflow: hidden;
-      border-radius: 18px;
     }
 
     .detail-table th,
     .detail-table td {
-      text-align: left;
-      vertical-align: top;
-      padding: 13px 14px;
-      border-bottom: 1px solid rgba(113, 69, 17, .10);
+      position: static;
+      border-bottom: 1px solid var(--line-soft);
+      padding: 11px 12px;
+      font-size: 14px;
       line-height: 1.65;
       word-break: break-word;
+      white-space: normal;
     }
 
     .detail-table th {
-      width: 145px;
-      color: #7c4a0e;
-      background: rgba(255, 212, 92, .18);
-      font-weight: 900;
-    }
-
-    .detail-table td {
-      color: #4c3827;
-      font-weight: 700;
-    }
-
-    .close {
-      width: 42px;
-      height: 42px;
-      border-radius: 999px;
-      border: 1px solid rgba(113,69,17,.12);
-      background: rgba(255,255,255,.8);
-      font-size: 22px;
-      font-weight: 900;
-      cursor: pointer;
+      width: 160px;
+      background: #fff3d7;
+      color: #6a4618;
     }
 
     .backtop {
@@ -659,176 +679,187 @@
       right: 18px;
       bottom: 18px;
       z-index: 30;
-      width: 58px;
-      height: 58px;
+      width: 52px;
+      height: 52px;
       display: grid;
       place-items: center;
-      border-radius: 22px;
-      background: linear-gradient(135deg, var(--gold), var(--orange));
-      border: 2px solid rgba(255,255,255,.72);
-      box-shadow: 0 14px 28px rgba(113, 69, 17, .22);
-      color: #5a3409;
-      font-size: 26px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #ffd86c, #f5a22b);
+      border: 1px solid #c9791e;
+      color: #4d2d08;
+      box-shadow: 0 10px 24px rgba(58, 42, 27, .20);
+      font-size: 24px;
       text-decoration: none;
-      transition: transform .16s ease;
     }
 
-    .backtop:hover {
-      transform: translateY(-3px) rotate(-4deg);
-      text-decoration: none;
-    }
+    .backtop:hover { text-decoration: none; transform: translateY(-2px); }
 
     footer {
+      width: min(1420px, calc(100% - 24px));
+      margin: 0 auto 42px;
       color: var(--muted);
-      font-weight: 800;
+      line-height: 1.7;
+      font-size: 13px;
+      font-weight: 750;
       text-align: center;
-      padding: 18px 0 40px;
-      line-height: 1.8;
     }
 
-    .error-box {
-      grid-column: 1 / -1;
-      border-radius: var(--radius-xl);
-      padding: 24px;
-      background: rgba(255,255,255,.82);
-      border: 1px solid rgba(227, 91, 79, .25);
-      box-shadow: var(--shadow-soft);
-      color: #71352f;
-      line-height: 1.85;
-      font-weight: 800;
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar {
+        position: static;
+        max-height: none;
+      }
+      .controls {
+        grid-template-columns: 1fr 1fr;
+      }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
-    .error-box code {
-      display: inline-block;
-      background: rgba(227, 91, 79, .08);
-      padding: 2px 6px;
-      border-radius: 7px;
-    }
-
-    @media (max-width: 940px) {
-      .hero-card {
-        grid-template-columns: 1fr;
+    @media (max-width: 620px) {
+      .topbar-inner {
+        min-height: auto;
+        padding: 10px 0;
+        align-items: flex-start;
+        flex-direction: column;
       }
-
-      .hero-mascot {
-        width: 190px;
-        justify-self: center;
-      }
-
-      .status {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .item-card {
-        grid-column: span 6;
-      }
-    }
-
-    @media (max-width: 680px) {
-      .site {
-        width: min(100% - 22px, var(--max));
-      }
-
-      .hero {
-        padding-top: 24px;
-      }
-
-      .hero-card {
-        padding: 24px 18px;
-      }
-
-      .hero-mascot {
-        width: 150px;
-      }
-
-      .search-row {
-        grid-template-columns: 1fr;
-      }
-
-      .status {
-        grid-template-columns: 1fr;
-      }
-
-      .item-card {
-        grid-column: 1 / -1;
-      }
-
-      .toolbar {
-        top: 6px;
-      }
-
-      .modal-head {
-        grid-template-columns: 62px minmax(0, 1fr) auto;
-        padding: 16px;
-      }
-
-      .modal-head h2 {
-        font-size: 22px;
-      }
-
-      .detail-table th {
-        width: 110px;
-      }
+      .top-links { margin-left: 0; }
+      .layout { width: min(100% - 14px, 1420px); margin-top: 10px; }
+      .hero-head { grid-template-columns: 1fr; }
+      .hero-badge { width: fit-content; }
+      .controls { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: 1fr; }
+      .pager { align-items: stretch; }
+      .page-buttons { width: 100%; }
+      .modal-head { grid-template-columns: 42px minmax(0, 1fr) auto; }
+      .modal-head h2 { font-size: 20px; }
+      .detail-table th { width: 112px; }
     }
   </style>
 </head>
 
 <body>
-  <header class="hero site" id="top">
-    <section class="hero-card">
-      <div class="hero-main">
-        <span class="eyebrow">🍁 Google Sheets 自動同步｜GitHub Pages 可用</span>
-        <h1>貓貓谷道具百科</h1>
-        <p class="subtitle">
-          這個網站會即時讀取你的 Google 試算表分頁，把「一般道具、蘋果道具、Boss掉落物」整理成可搜尋、可分類、可展開查看詳情的網頁版百科。
-        </p>
+  <header class="topbar" id="top">
+    <div class="topbar-inner">
+      <div class="logo">
+        <span class="logo-mark">🍁</span>
+        <span>貓貓谷道具百科</span>
       </div>
-      <div class="hero-mascot" aria-hidden="true"><span>🐾</span></div>
-    </section>
+      <nav class="top-links" aria-label="上方選單">
+        <a class="top-link" href="#database">資料列表</a>
+        <a class="top-link" href="#filters">分類篩選</a>
+        <a class="top-link" href="#help">同步說明</a>
+      </nav>
+    </div>
   </header>
 
-  <main class="site">
-    <section class="toolbar panel" aria-label="搜尋與分類">
-      <div class="search-row">
-        <label class="search">
-          <span class="search-icon">🔎</span>
-          <input id="searchInput" type="search" placeholder="搜尋道具名稱、效果、來源、備註……" autocomplete="off" />
-        </label>
-        <button class="btn ghost" id="clearBtn" type="button">清除搜尋</button>
-        <button class="btn" id="reloadBtn" type="button">重新同步</button>
+  <div class="layout">
+    <aside class="sidebar" id="filters">
+      <div class="side-title">📚 分類篩選</div>
+
+      <section class="side-section">
+        <h3>資料分頁</h3>
+        <div class="side-grid" id="sheetButtons"></div>
+      </section>
+
+      <section class="side-section">
+        <h3>常用欄位</h3>
+        <div class="side-grid" id="fieldButtons"></div>
+      </section>
+
+      <section class="side-section" id="help">
+        <h3>GitHub Pages 提醒</h3>
+        <div style="color: var(--muted); font-size: 13px; font-weight: 750; line-height: 1.75;">
+          本頁不需要後端，直接上傳到 GitHub Pages 即可。若讀不到資料，請確認 Google Sheets 共用權限為「知道連結的任何人：檢視者」。
+        </div>
+      </section>
+    </aside>
+
+    <main class="main">
+      <section class="hero">
+        <div class="hero-head">
+          <div>
+            <div class="crumb">首頁 / 資料庫 / 道具百科</div>
+            <h1>資料列表</h1>
+          </div>
+          <div class="hero-badge" id="syncState">同步中</div>
+        </div>
+        <p class="hero-desc">
+          顯示方式改為資料庫風格：左側分類、右側列表、關鍵字搜尋、排序、分頁與詳細資料視窗。資料來源仍然是你的 Google Sheets。
+        </p>
+      </section>
+
+      <section class="control-panel">
+        <div class="control-title">🔎 搜尋 / 排序 / 顯示</div>
+        <div class="controls">
+          <label class="field">
+            <span class="search-icon">🔍</span>
+            <input id="searchInput" type="search" placeholder="搜尋 ID、道具名稱、說明、來源、備註……" autocomplete="off">
+          </label>
+
+          <label class="field">
+            <select id="sortSelect" aria-label="排序">
+              <option value="default">排序：預設</option>
+              <option value="nameAsc">名稱：A → Z</option>
+              <option value="nameDesc">名稱：Z → A</option>
+              <option value="idAsc">ID：小 → 大</option>
+              <option value="idDesc">ID：大 → 小</option>
+              <option value="sheetAsc">分類：A → Z</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <select id="pageSizeSelect" aria-label="每頁數量">
+              <option value="25">每頁 25 筆</option>
+              <option value="50" selected>每頁 50 筆</option>
+              <option value="100">每頁 100 筆</option>
+              <option value="200">每頁 200 筆</option>
+            </select>
+          </label>
+
+          <button class="btn ghost" id="clearBtn" type="button">清除</button>
+          <button class="btn" id="reloadBtn" type="button">重新同步</button>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><b id="totalCount">0</b><span>總資料筆數</span></div>
+          <div class="stat"><b id="shownCount">0</b><span>符合條件</span></div>
+          <div class="stat"><b id="pageCount">0</b><span>總頁數</span></div>
+          <div class="stat"><b id="sheetCount">0</b><span>資料分頁</span></div>
+        </div>
+      </section>
+
+      <div class="notice" id="notice">
+        <strong>正在同步：</strong>從 Google Sheets 讀取資料中……
       </div>
-      <nav class="tabs" id="tabs" aria-label="分頁分類"></nav>
-    </section>
 
-    <section class="status" aria-label="資料統計">
-      <div class="stat"><b id="totalCount">0</b><span>總資料筆數</span></div>
-      <div class="stat"><b id="shownCount">0</b><span>目前顯示</span></div>
-      <div class="stat"><b id="sheetCount">0</b><span>資料分頁</span></div>
-      <div class="stat"><b id="syncState">同步中</b><span>同步狀態</span></div>
-    </section>
+      <section class="data-panel" id="database">
+        <div class="data-title">
+          <span>📦 數據列表</span>
+          <span id="listSummary">讀取中</span>
+        </div>
 
-    <p class="notice" id="notice">
-      <strong>提示：</strong>如果網頁一直載入失敗，請確認 Google Sheets 的共用權限是「知道連結的任何人：檢視者」，或使用「檔案 → 共用 → 發佈到網路」。
-    </p>
+        <div class="table-wrap" id="tableWrap">
+          <div class="loading">
+            <div class="loader"></div>
+            正在從 Google Sheets 讀取道具資料……
+          </div>
+        </div>
 
-    <section class="grid" id="grid" aria-live="polite">
-      <div class="loading">
-        <div class="loader" aria-hidden="true"></div>
-        <div>正在從 Google Sheets 讀取道具資料……</div>
-      </div>
-    </section>
-
-    <div class="load-more-wrap" id="loadMoreWrap">
-      <button class="btn" id="loadMoreBtn" type="button">載入更多</button>
-    </div>
-  </main>
+        <div class="pager">
+          <div class="page-info" id="pageInfo">第 0 / 0 頁</div>
+          <div class="page-buttons" id="pageButtons"></div>
+        </div>
+      </section>
+    </main>
+  </div>
 
   <dialog id="detailDialog">
     <div class="modal-head">
       <div class="icon-box" id="modalIcon"><span class="placeholder">🎒</span></div>
       <div>
-        <span class="source-pill" id="modalSource">分類</span>
         <h2 id="modalTitle">道具名稱</h2>
+        <div class="modal-sub" id="modalSub">分類 / ID</div>
       </div>
       <button class="close" id="closeDialog" type="button" aria-label="關閉">×</button>
     </div>
@@ -837,67 +868,71 @@
 
   <a class="backtop" href="#top" aria-label="回到頂部">📜</a>
 
-  <footer class="site">
-    <div>貓貓谷道具百科｜資料來源：Google Sheets</div>
-    <div>更新表格後，重新整理此網頁即可同步最新內容。</div>
+  <footer>
+    貓貓谷道具百科｜Google Sheets 自動同步｜資料庫列表版<br>
+    修改試算表後，重新整理本頁或按「重新同步」即可更新。
   </footer>
 
   <script>
     /**
-     * ================================
-     * 你通常只需要改這裡
-     * ================================
+     * =========================================================
+     * 基本設定
+     * =========================================================
      */
     const SHEET_ID = "1hCeb4EhqOXCqudzbLX68m6wXCOR1eCoVeM-WLvK7HXM";
-
-    // 這裡放「要變成百科資料卡」的分頁名稱。
-    // 若你未來新增分頁，例如「任務道具」，只要加進陣列即可。
     const DATA_SHEETS = ["一般道具", "蘋果道具", "Boss掉落物"];
 
-    // 首次最多顯示幾張卡片，資料很多時可避免手機一次渲染太慢。
-    const PAGE_SIZE = 60;
-
     /**
-     * ================================
-     * 程式本體：通常不用改
-     * ================================
+     * =========================================================
+     * 狀態
+     * =========================================================
      */
     const state = {
       allItems: [],
       filteredItems: [],
       activeSheet: "全部",
+      fieldFilter: "",
       query: "",
-      visibleLimit: PAGE_SIZE,
+      sort: "default",
+      page: 1,
+      pageSize: 50,
       errors: []
     };
 
     const $ = (selector) => document.querySelector(selector);
 
     const els = {
-      grid: $("#grid"),
-      tabs: $("#tabs"),
+      sheetButtons: $("#sheetButtons"),
+      fieldButtons: $("#fieldButtons"),
       searchInput: $("#searchInput"),
+      sortSelect: $("#sortSelect"),
+      pageSizeSelect: $("#pageSizeSelect"),
       clearBtn: $("#clearBtn"),
       reloadBtn: $("#reloadBtn"),
       totalCount: $("#totalCount"),
       shownCount: $("#shownCount"),
+      pageCount: $("#pageCount"),
       sheetCount: $("#sheetCount"),
       syncState: $("#syncState"),
       notice: $("#notice"),
-      loadMoreWrap: $("#loadMoreWrap"),
-      loadMoreBtn: $("#loadMoreBtn"),
+      tableWrap: $("#tableWrap"),
+      listSummary: $("#listSummary"),
+      pageInfo: $("#pageInfo"),
+      pageButtons: $("#pageButtons"),
       dialog: $("#detailDialog"),
       closeDialog: $("#closeDialog"),
       modalTitle: $("#modalTitle"),
-      modalSource: $("#modalSource"),
+      modalSub: $("#modalSub"),
       modalIcon: $("#modalIcon"),
       modalBody: $("#modalBody")
     };
 
     const nameKeys = ["名稱", "道具名稱", "物品名稱", "品名", "道具", "物品", "item", "name", "title"];
-    const imageKeys = ["圖片", "圖示", "圖像", "icon", "image", "img", "圖片網址", "圖檔", "imageurl", "url"];
+    const imageKeys = ["圖片", "圖示", "圖像", "icon", "image", "img", "圖片網址", "圖檔", "imageurl"];
     const descKeys = ["說明", "描述", "介紹", "效果", "用途", "備註", "取得方式", "來源", "掉落", "說明文字", "description", "effect", "note"];
-    const lowPriorityKeys = ["圖片", "圖示", "網址", "url", "編號", "id"];
+    const idKeys = ["id", "ID", "編號", "物品ID", "道具ID", "itemid", "item id"];
+    const levelKeys = ["等級", "需求等級", "Lv", "LV", "level", "Level"];
+    const fieldKeySuggestions = ["取得方式", "來源", "效果", "備註", "用途", "掉落", "數量", "價格", "類型", "分類"];
 
     function escapeHtml(value) {
       return String(value ?? "")
@@ -909,20 +944,22 @@
     }
 
     function normalizeText(value) {
-      return String(value ?? "")
-        .replace(/\s+/g, " ")
-        .trim();
+      return String(value ?? "").replace(/\s+/g, " ").trim();
+    }
+
+    function compactKey(value) {
+      return String(value || "").toLowerCase().replace(/\s+/g, "");
+    }
+
+    function keyMatch(key, candidates) {
+      const k = compactKey(key);
+      return candidates.some(candidate => k.includes(compactKey(candidate)));
     }
 
     function cellToString(cell) {
       if (!cell) return "";
       const value = cell.f ?? cell.v ?? "";
       return normalizeText(value);
-    }
-
-    function keyMatch(key, candidates) {
-      const k = String(key || "").toLowerCase().replace(/\s+/g, "");
-      return candidates.some(candidate => k.includes(String(candidate).toLowerCase().replace(/\s+/g, "")));
     }
 
     function findByKeys(item, candidates) {
@@ -938,14 +975,12 @@
     function normalizeImageUrl(value) {
       let text = String(value || "").trim();
 
-      // 支援 Google Sheets 常見的 =IMAGE("url")
       const formulaMatch = text.match(/IMAGE\(["']([^"']+)["']/i);
       if (formulaMatch) text = formulaMatch[1];
 
       let url = extractFirstUrl(text) || text;
       if (!url) return "";
 
-      // Google Drive 分享連結轉可讀取圖檔連結
       const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
       if (driveMatch) {
         return `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
@@ -966,9 +1001,30 @@
       if (named) return named;
 
       const firstUseful = Object.entries(item.fields)
-        .find(([key, value]) => value && !keyMatch(key, imageKeys) && !keyMatch(key, lowPriorityKeys));
+        .find(([key, value]) => value && !keyMatch(key, imageKeys) && !keyMatch(key, idKeys));
 
       return firstUseful ? firstUseful[1] : "未命名道具";
+    }
+
+    function getItemId(item) {
+      const direct = findByKeys(item, idKeys);
+      if (direct) return direct;
+
+      for (const value of Object.values(item.fields)) {
+        const text = String(value || "").trim();
+        if (/^\d{4,}$/.test(text)) return text;
+      }
+
+      return "";
+    }
+
+    function getItemLevel(item) {
+      const direct = findByKeys(item, levelKeys);
+      if (direct) return direct;
+
+      const joined = Object.values(item.fields).join(" ");
+      const match = joined.match(/\b(?:Lv\.?|LV|等級)\s*[:：]?\s*(\d{1,4})\b/i);
+      return match ? match[1] : "";
     }
 
     function getItemDescription(item) {
@@ -976,7 +1032,7 @@
       if (byKey) return byKey;
 
       const values = Object.entries(item.fields)
-        .filter(([key, value]) => value && !keyMatch(key, imageKeys) && !keyMatch(key, nameKeys))
+        .filter(([key, value]) => value && !keyMatch(key, imageKeys) && !keyMatch(key, nameKeys) && !keyMatch(key, idKeys))
         .map(([, value]) => value);
 
       return values.slice(0, 2).join("｜");
@@ -1010,7 +1066,6 @@
 
       let rawRows = (table.rows || []).map(row => row.c || []);
 
-      // 有些表格的欄位名會被 Google 判斷成 A/B/C，這時改用第一列當標題。
       const usefulHeaderCount = headers.filter(h => h && !/^([A-Z]+|[a-z]+)$/.test(h)).length;
       if (usefulHeaderCount < 2 && rawRows.length > 0) {
         const firstRow = rawRows[0].map(cellToString);
@@ -1029,6 +1084,7 @@
 
         return {
           id: `${sheetName}-${rowIndex}-${Math.random().toString(36).slice(2)}`,
+          originalIndex: rowIndex,
           sheet: sheetName,
           fields
         };
@@ -1037,8 +1093,10 @@
 
     function loadSheetByJsonp(sheetName) {
       return new Promise((resolve, reject) => {
-        const callbackName = `__catpedia_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const callbackName = `__catpedia_db_${Date.now()}_${Math.random().toString(36).slice(2)}`;
         const timeoutMs = 15000;
+
+        const script = document.createElement("script");
 
         const timer = setTimeout(() => {
           cleanup();
@@ -1063,10 +1121,8 @@
           resolve(parseGvizTable(response.table, sheetName));
         };
 
-        const script = document.createElement("script");
         const tqx = encodeURIComponent(`out:json;responseHandler:${callbackName}`);
-        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(sheetName)}&headers=1&tqx=${tqx}`;
-        script.src = url;
+        script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(sheetName)}&headers=1&tqx=${tqx}`;
         script.async = true;
         script.onerror = () => {
           cleanup();
@@ -1081,16 +1137,12 @@
       state.errors = [];
       state.allItems = [];
       state.filteredItems = [];
-      state.visibleLimit = PAGE_SIZE;
+      state.page = 1;
 
       els.syncState.textContent = "同步中";
       els.notice.innerHTML = "<strong>正在同步：</strong>從 Google Sheets 讀取資料中……";
-      els.grid.innerHTML = `
-        <div class="loading">
-          <div class="loader" aria-hidden="true"></div>
-          <div>正在從 Google Sheets 讀取道具資料……</div>
-        </div>
-      `;
+      els.tableWrap.innerHTML = `<div class="loading"><div class="loader"></div>正在從 Google Sheets 讀取道具資料……</div>`;
+      els.listSummary.textContent = "讀取中";
 
       const results = await Promise.allSettled(DATA_SHEETS.map(loadSheetByJsonp));
       const items = [];
@@ -1105,40 +1157,62 @@
       });
 
       state.allItems = items;
-      state.filteredItems = items;
-      buildTabs();
-      applyFilters();
+      buildSidebar();
 
       if (items.length > 0) {
-        els.syncState.textContent = "完成";
+        els.syncState.textContent = "同步完成";
         els.notice.innerHTML = `<strong>同步完成：</strong>目前讀到 ${items.length} 筆資料。若你剛修改試算表，請按「重新同步」或重新整理網頁。`;
+        applyFilters();
       } else {
-        els.syncState.textContent = "失敗";
-        renderErrors();
+        els.syncState.textContent = "同步失敗";
+        renderError();
       }
     }
 
-    function buildTabs() {
+    function buildSidebar() {
       const counts = new Map();
       DATA_SHEETS.forEach(sheet => counts.set(sheet, 0));
       state.allItems.forEach(item => counts.set(item.sheet, (counts.get(item.sheet) || 0) + 1));
 
-      const tabs = [
+      const sheetButtons = [
         { name: "全部", count: state.allItems.length },
         ...DATA_SHEETS.map(sheet => ({ name: sheet, count: counts.get(sheet) || 0 }))
       ];
 
-      els.tabs.innerHTML = tabs.map(tab => `
-        <button class="tab ${state.activeSheet === tab.name ? "active" : ""}" type="button" data-sheet="${escapeHtml(tab.name)}">
-          ${escapeHtml(tab.name)} ${tab.count}
+      els.sheetButtons.innerHTML = sheetButtons.map(button => `
+        <button class="side-btn ${state.activeSheet === button.name ? "active" : ""}" type="button" data-sheet="${escapeHtml(button.name)}">
+          ${escapeHtml(button.name)} ${button.count}
         </button>
       `).join("");
 
-      els.tabs.querySelectorAll(".tab").forEach(button => {
+      els.sheetButtons.querySelectorAll("[data-sheet]").forEach(button => {
         button.addEventListener("click", () => {
           state.activeSheet = button.dataset.sheet;
-          state.visibleLimit = PAGE_SIZE;
-          buildTabs();
+          state.page = 1;
+          buildSidebar();
+          applyFilters();
+        });
+      });
+
+      const allKeys = new Set();
+      state.allItems.forEach(item => Object.keys(item.fields).forEach(key => allKeys.add(key)));
+      const useful = fieldKeySuggestions
+        .filter(suggestion => Array.from(allKeys).some(key => keyMatch(key, [suggestion])));
+
+      els.fieldButtons.innerHTML = [
+        `<button class="side-btn ${state.fieldFilter === "" ? "active" : ""}" type="button" data-field="">不限欄位</button>`,
+        ...useful.map(field => `
+          <button class="side-btn ${state.fieldFilter === field ? "active" : ""}" type="button" data-field="${escapeHtml(field)}">
+            ${escapeHtml(field)}
+          </button>
+        `)
+      ].join("");
+
+      els.fieldButtons.querySelectorAll("[data-field]").forEach(button => {
+        button.addEventListener("click", () => {
+          state.fieldFilter = button.dataset.field;
+          state.page = 1;
+          buildSidebar();
           applyFilters();
         });
       });
@@ -1147,95 +1221,163 @@
     function applyFilters() {
       const query = state.query.trim().toLowerCase();
 
-      state.filteredItems = state.allItems.filter(item => {
-        const sheetOk = state.activeSheet === "全部" || item.sheet === state.activeSheet;
-        const queryOk = !query || getSearchBlob(item).includes(query);
-        return sheetOk && queryOk;
+      let filtered = state.allItems.filter(item => {
+        if (state.activeSheet !== "全部" && item.sheet !== state.activeSheet) return false;
+
+        if (state.fieldFilter) {
+          const matchedKey = Object.keys(item.fields).find(key => keyMatch(key, [state.fieldFilter]));
+          if (!matchedKey || !item.fields[matchedKey]) return false;
+        }
+
+        if (query && !getSearchBlob(item).includes(query)) return false;
+
+        return true;
       });
 
+      filtered = sortItems(filtered);
+      state.filteredItems = filtered;
       render();
     }
 
+    function sortItems(items) {
+      const arr = [...items];
+
+      const byName = (a, b) => getItemName(a).localeCompare(getItemName(b), "zh-Hant");
+      const bySheet = (a, b) => a.sheet.localeCompare(b.sheet, "zh-Hant") || byName(a, b);
+      const numericId = (item) => {
+        const id = getItemId(item);
+        const n = Number(String(id).replace(/[^\d.-]/g, ""));
+        return Number.isFinite(n) ? n : Number.MAX_SAFE_INTEGER;
+      };
+
+      if (state.sort === "nameAsc") arr.sort(byName);
+      if (state.sort === "nameDesc") arr.sort((a, b) => byName(b, a));
+      if (state.sort === "sheetAsc") arr.sort(bySheet);
+      if (state.sort === "idAsc") arr.sort((a, b) => numericId(a) - numericId(b) || byName(a, b));
+      if (state.sort === "idDesc") arr.sort((a, b) => numericId(b) - numericId(a) || byName(a, b));
+
+      return arr;
+    }
+
     function render() {
+      const totalPages = Math.max(1, Math.ceil(state.filteredItems.length / state.pageSize));
+      state.page = Math.min(Math.max(1, state.page), totalPages);
+
       els.totalCount.textContent = state.allItems.length;
       els.shownCount.textContent = state.filteredItems.length;
+      els.pageCount.textContent = totalPages;
       els.sheetCount.textContent = DATA_SHEETS.length;
-
-      if (state.allItems.length === 0 && state.errors.length > 0) {
-        renderErrors();
-        return;
-      }
+      els.listSummary.textContent = `${state.filteredItems.length} 筆 / 共 ${state.allItems.length} 筆`;
 
       if (state.filteredItems.length === 0) {
-        els.grid.innerHTML = `
+        els.tableWrap.innerHTML = `
           <div class="empty">
-            <h2>沒有找到符合條件的道具</h2>
-            <p>可以換個關鍵字，或切回「全部」分類。</p>
+            沒有找到符合條件的資料。<br>
+            可以改用其他關鍵字，或切回「全部」分類。
           </div>
         `;
-        els.loadMoreWrap.classList.remove("show");
+        renderPager(totalPages);
         return;
       }
 
-      const shownItems = state.filteredItems.slice(0, state.visibleLimit);
-      els.grid.innerHTML = shownItems.map(createCardHtml).join("");
+      const start = (state.page - 1) * state.pageSize;
+      const pageItems = state.filteredItems.slice(start, start + state.pageSize);
 
-      els.grid.querySelectorAll("[data-open-detail]").forEach(button => {
+      els.tableWrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th class="col-icon">圖示</th>
+              <th class="col-id">ID</th>
+              <th>名稱 / 說明</th>
+              <th class="col-level">Lv.</th>
+              <th class="col-source">分類</th>
+              <th class="col-action">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pageItems.map(createRowHtml).join("")}
+          </tbody>
+        </table>
+      `;
+
+      els.tableWrap.querySelectorAll("[data-open-detail]").forEach(button => {
         button.addEventListener("click", () => {
-          const id = button.dataset.openDetail;
-          const item = state.filteredItems.find(entry => entry.id === id);
+          const item = state.filteredItems.find(entry => entry.id === button.dataset.openDetail);
           if (item) openDetail(item);
         });
       });
 
-      if (state.filteredItems.length > state.visibleLimit) {
-        els.loadMoreWrap.classList.add("show");
-      } else {
-        els.loadMoreWrap.classList.remove("show");
-      }
+      renderPager(totalPages);
     }
 
-    function createCardHtml(item) {
+    function createRowHtml(item) {
       const name = getItemName(item);
+      const id = getItemId(item);
+      const level = getItemLevel(item);
       const desc = getItemDescription(item);
       const image = getItemImage(item);
-
-      const usedKeys = new Set();
-      Object.keys(item.fields).forEach(key => {
-        if (keyMatch(key, nameKeys) || keyMatch(key, imageKeys) || keyMatch(key, descKeys)) {
-          usedKeys.add(key);
-        }
-      });
-
-      const chips = Object.entries(item.fields)
-        .filter(([key, value]) => value && !usedKeys.has(key))
-        .slice(0, 7)
-        .map(([key, value]) => {
-          const text = `${key}：${value}`;
-          return `<span class="field-chip" title="${escapeHtml(text)}"><em>${escapeHtml(key)}</em>：${escapeHtml(value)}</span>`;
-        }).join("");
-
       const icon = image
         ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(name)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'), {className: 'placeholder', textContent: '🎒'}))">`
         : `<span class="placeholder">🎒</span>`;
 
       return `
-        <article class="item-card">
-          <div class="card-top">
-            <div class="icon-box">${icon}</div>
-            <div class="card-title">
-              <span class="source-pill">🍁 ${escapeHtml(item.sheet)}</span>
-              <h3>${escapeHtml(name)}</h3>
-            </div>
-          </div>
-          <p class="desc">${escapeHtml(desc || "這筆資料目前沒有說明欄位，可點擊詳情查看完整內容。")}</p>
-          <div class="fields">${chips || `<span class="field-chip">尚無其他欄位</span>`}</div>
-          <div class="card-actions">
-            <span class="small-muted">${Object.keys(item.fields).length} 個欄位</span>
-            <button class="btn ghost" type="button" data-open-detail="${escapeHtml(item.id)}">查看詳情</button>
-          </div>
-        </article>
+        <tr>
+          <td class="col-icon"><div class="icon-box">${icon}</div></td>
+          <td class="col-id">${id ? `<span class="tag">ID ${escapeHtml(id)}</span>` : `<span style="color: var(--muted-2);">—</span>`}</td>
+          <td>
+            <div class="item-name">${escapeHtml(name)}</div>
+            <div class="item-desc">${escapeHtml(desc || "尚無說明，點擊詳情查看完整欄位。")}</div>
+          </td>
+          <td class="col-level">${level ? `<span class="tag">Lv.${escapeHtml(level)}</span>` : `<span style="color: var(--muted-2);">—</span>`}</td>
+          <td class="col-source"><span class="tag">${escapeHtml(item.sheet)}</span></td>
+          <td class="col-action"><button class="mini-btn" type="button" data-open-detail="${escapeHtml(item.id)}">詳情</button></td>
+        </tr>
       `;
+    }
+
+    function renderPager(totalPages) {
+      const total = state.filteredItems.length;
+      const start = total === 0 ? 0 : (state.page - 1) * state.pageSize + 1;
+      const end = Math.min(state.page * state.pageSize, total);
+
+      els.pageInfo.textContent = `第 ${state.page} / ${totalPages} 頁｜顯示 ${start}-${end} / ${total}`;
+
+      const pages = getPageNumbers(state.page, totalPages);
+      els.pageButtons.innerHTML = `
+        <button class="page-btn" type="button" data-page="prev" ${state.page <= 1 ? "disabled" : ""}>‹</button>
+        ${pages.map(page => page === "..."
+          ? `<button class="page-btn" type="button" disabled>…</button>`
+          : `<button class="page-btn ${page === state.page ? "active" : ""}" type="button" data-page="${page}">${page}</button>`
+        ).join("")}
+        <button class="page-btn" type="button" data-page="next" ${state.page >= totalPages ? "disabled" : ""}>›</button>
+      `;
+
+      els.pageButtons.querySelectorAll("[data-page]").forEach(button => {
+        button.addEventListener("click", () => {
+          const value = button.dataset.page;
+          if (value === "prev") state.page -= 1;
+          else if (value === "next") state.page += 1;
+          else state.page = Number(value);
+          render();
+          document.querySelector("#database").scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      });
+    }
+
+    function getPageNumbers(current, total) {
+      if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1);
+
+      const pages = [1];
+      const left = Math.max(2, current - 1);
+      const right = Math.min(total - 1, current + 1);
+
+      if (left > 2) pages.push("...");
+      for (let page = left; page <= right; page++) pages.push(page);
+      if (right < total - 1) pages.push("...");
+      pages.push(total);
+
+      return pages;
     }
 
     function formatDetailValue(value) {
@@ -1255,55 +1397,63 @@
 
     function openDetail(item) {
       const name = getItemName(item);
+      const id = getItemId(item);
+      const level = getItemLevel(item);
       const image = getItemImage(item);
+
       const icon = image
         ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(name)}" onerror="this.replaceWith(Object.assign(document.createElement('span'), {className: 'placeholder', textContent: '🎒'}))">`
         : `<span class="placeholder">🎒</span>`;
 
       els.modalTitle.textContent = name;
-      els.modalSource.textContent = `🍁 ${item.sheet}`;
+      els.modalSub.textContent = `${item.sheet}${id ? " / ID " + id : ""}${level ? " / Lv." + level : ""}`;
       els.modalIcon.innerHTML = icon;
 
-      const rows = Object.entries(item.fields)
-        .map(([key, value]) => `
-          <tr>
-            <th>${escapeHtml(key)}</th>
-            <td>${formatDetailValue(value)}</td>
-          </tr>
-        `).join("");
+      const rows = Object.entries(item.fields).map(([key, value]) => `
+        <tr>
+          <th>${escapeHtml(key)}</th>
+          <td>${formatDetailValue(value)}</td>
+        </tr>
+      `).join("");
 
       els.modalBody.innerHTML = `
         <table class="detail-table">
-          <tbody>${rows}</tbody>
+          <tbody>
+            <tr><th>資料分頁</th><td>${escapeHtml(item.sheet)}</td></tr>
+            ${rows}
+          </tbody>
         </table>
       `;
 
       els.dialog.showModal();
     }
 
-    function renderErrors() {
+    function renderError() {
       const errors = state.errors.length ? state.errors : ["沒有讀到任何資料"];
-      els.grid.innerHTML = `
-        <div class="error-box">
+      els.tableWrap.innerHTML = `
+        <div class="error">
           <h2>讀取 Google Sheets 失敗</h2>
-          <p>請檢查以下項目：</p>
+          <p>請檢查：</p>
           <ol>
-            <li>Google Sheets 右上角「共用」→ 一般存取改成 <code>知道連結的任何人</code>，權限選 <code>檢視者</code>。</li>
+            <li>Google Sheets 共用權限是否為 <code>知道連結的任何人：檢視者</code>。</li>
             <li>分頁名稱是否完全一致：<code>${DATA_SHEETS.map(escapeHtml).join("</code>、<code>")}</code>。</li>
-            <li>第一列最好放欄位名稱，例如：名稱、圖片、說明、取得方式、備註。</li>
-            <li>如果仍失敗，可使用 Google Sheets 的「檔案 → 共用 → 發佈到網路」。</li>
+            <li>第一列是否為欄位名稱，例如：名稱、圖片、說明、取得方式、備註。</li>
+            <li>若仍失敗，可到 Google Sheets 使用「檔案 → 共用 → 發佈到網路」。</li>
           </ol>
           <p><strong>錯誤訊息：</strong>${errors.map(escapeHtml).join(" / ")}</p>
         </div>
       `;
-      els.notice.innerHTML = "<strong>同步失敗：</strong>網站無法讀到 Google Sheets。請依照錯誤訊息檢查共用權限與分頁名稱。";
+
+      els.notice.innerHTML = "<strong>同步失敗：</strong>網站無法讀到 Google Sheets。";
       els.totalCount.textContent = 0;
       els.shownCount.textContent = 0;
+      els.pageCount.textContent = 0;
       els.sheetCount.textContent = DATA_SHEETS.length;
-      els.loadMoreWrap.classList.remove("show");
+      els.listSummary.textContent = "同步失敗";
+      renderPager(1);
     }
 
-    function debounce(fn, wait = 150) {
+    function debounce(fn, wait = 130) {
       let timer;
       return (...args) => {
         clearTimeout(timer);
@@ -1313,40 +1463,50 @@
 
     els.searchInput.addEventListener("input", debounce((event) => {
       state.query = event.target.value;
-      state.visibleLimit = PAGE_SIZE;
+      state.page = 1;
       applyFilters();
-    }, 120));
+    }));
+
+    els.sortSelect.addEventListener("change", (event) => {
+      state.sort = event.target.value;
+      state.page = 1;
+      applyFilters();
+    });
+
+    els.pageSizeSelect.addEventListener("change", (event) => {
+      state.pageSize = Number(event.target.value);
+      state.page = 1;
+      applyFilters();
+    });
 
     els.clearBtn.addEventListener("click", () => {
       state.query = "";
+      state.sort = "default";
+      state.activeSheet = "全部";
+      state.fieldFilter = "";
+      state.page = 1;
+
       els.searchInput.value = "";
-      state.visibleLimit = PAGE_SIZE;
+      els.sortSelect.value = "default";
+
+      buildSidebar();
       applyFilters();
       els.searchInput.focus();
     });
 
-    els.reloadBtn.addEventListener("click", () => {
-      loadAllSheets();
-    });
+    els.reloadBtn.addEventListener("click", () => loadAllSheets());
 
-    els.loadMoreBtn.addEventListener("click", () => {
-      state.visibleLimit += PAGE_SIZE;
-      render();
-    });
-
-    els.closeDialog.addEventListener("click", () => {
-      els.dialog.close();
-    });
+    els.closeDialog.addEventListener("click", () => els.dialog.close());
 
     els.dialog.addEventListener("click", (event) => {
       const rect = els.dialog.getBoundingClientRect();
-      const clickedOutside =
+      const outside =
         event.clientX < rect.left ||
         event.clientX > rect.right ||
         event.clientY < rect.top ||
         event.clientY > rect.bottom;
 
-      if (clickedOutside) els.dialog.close();
+      if (outside) els.dialog.close();
     });
 
     loadAllSheets();

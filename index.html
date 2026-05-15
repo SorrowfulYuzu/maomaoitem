@@ -889,6 +889,15 @@
     const LAST_UPDATED_CELL_RANGE = "B2";
 
     /**
+     * 如果你想直接抓取 Google Sheets「插入到儲存格內」的圖示，
+     * 請部署 README 內提供的 Apps Script，然後把 Web App URL 貼到這裡。
+     *
+     * 留空時：使用原本的 Google Sheets 公開資料讀取方式，只能讀文字/網址。
+     * 填入時：改由 Apps Script 回傳資料，能讀取儲存格內的 CellImage 圖示。
+     */
+    const APPS_SCRIPT_DATA_ENDPOINT = "";
+
+    /**
      * =========================================================
      * 狀態
      * =========================================================
@@ -1045,6 +1054,8 @@
     }
 
     function getItemImage(item) {
+      if (item.imageUrl) return item.imageUrl;
+
       const byKey = normalizeImageUrl(findByKeys(item, imageKeys));
       if (isProbablyImageUrl(byKey)) return byKey;
 
@@ -1231,6 +1242,70 @@
       });
     }
 
+
+    function loadAppsScriptDataByJsonp(endpoint) {
+      return new Promise((resolve, reject) => {
+        const cleanEndpoint = String(endpoint || "").trim();
+        if (!cleanEndpoint) {
+          resolve(null);
+          return;
+        }
+
+        const callbackName = `__catpedia_apps_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const timeoutMs = 20000;
+        const script = document.createElement("script");
+
+        const timer = setTimeout(() => {
+          cleanup();
+          reject(new Error("Apps Script 資料讀取逾時"));
+        }, timeoutMs);
+
+        function cleanup() {
+          clearTimeout(timer);
+          delete window[callbackName];
+          script.remove();
+        }
+
+        window[callbackName] = (response) => {
+          cleanup();
+
+          if (!response) {
+            reject(new Error("Apps Script 沒有回傳資料"));
+            return;
+          }
+
+          if (response.error) {
+            reject(new Error(response.error));
+            return;
+          }
+
+          const items = Array.isArray(response.items) ? response.items.map((item, index) => ({
+            id: item.id || `${item.sheet || "AppsScript"}-${index}-${Math.random().toString(36).slice(2)}`,
+            originalIndex: Number.isFinite(item.originalIndex) ? item.originalIndex : index,
+            sheet: item.sheet || "未分類",
+            fields: item.fields || {},
+            imageUrl: item.imageUrl || ""
+          })) : [];
+
+          resolve({
+            items,
+            lastUpdated: response.lastUpdated || "",
+            generatedAt: response.generatedAt || ""
+          });
+        };
+
+        const separator = cleanEndpoint.includes("?") ? "&" : "?";
+        script.src = `${cleanEndpoint}${separator}callback=${encodeURIComponent(callbackName)}&t=${Date.now()}`;
+        script.async = true;
+        script.onerror = () => {
+          cleanup();
+          reject(new Error("無法連線到 Apps Script Web App"));
+        };
+
+        document.body.appendChild(script);
+      });
+    }
+
     async function loadAllSheets() {
       state.errors = [];
       state.allItems = [];
@@ -1242,17 +1317,28 @@
       els.tableWrap.innerHTML = `<div class="loading"><div class="loader"></div>正在從 Google Sheets 讀取道具資料……</div>`;
       els.listSummary.textContent = "讀取中";
 
-      const results = await Promise.allSettled(DATA_SHEETS.map(loadSheetByJsonp));
-      const items = [];
+      let items = [];
+      let appsScriptPayload = null;
 
-      results.forEach((result, index) => {
-        const sheetName = DATA_SHEETS[index];
-        if (result.status === "fulfilled") {
-          items.push(...result.value);
-        } else {
-          state.errors.push(result.reason?.message || `「${sheetName}」讀取失敗`);
+      if (APPS_SCRIPT_DATA_ENDPOINT.trim()) {
+        try {
+          appsScriptPayload = await loadAppsScriptDataByJsonp(APPS_SCRIPT_DATA_ENDPOINT);
+          items = appsScriptPayload?.items || [];
+        } catch (error) {
+          state.errors.push(error.message || "Apps Script 資料讀取失敗");
         }
-      });
+      } else {
+        const results = await Promise.allSettled(DATA_SHEETS.map(loadSheetByJsonp));
+
+        results.forEach((result, index) => {
+          const sheetName = DATA_SHEETS[index];
+          if (result.status === "fulfilled") {
+            items.push(...result.value);
+          } else {
+            state.errors.push(result.reason?.message || `「${sheetName}」讀取失敗`);
+          }
+        });
+      }
 
       state.allItems = items;
       buildSidebar();
@@ -1260,16 +1346,20 @@
       if (items.length > 0) {
         els.syncState.textContent = "同步完成";
 
-        try {
-          const lastUpdatedText = await loadCellByJsonp(LAST_UPDATED_CELL_SHEET, LAST_UPDATED_CELL_RANGE);
-          if (lastUpdatedText) {
-            els.notice.innerHTML = `<strong>同步完成：</strong>最後更新時間 ${escapeHtml(lastUpdatedText)}`;
-          } else {
-            els.notice.innerHTML = `<strong>同步完成：</strong>最後更新時間未填寫，請檢查 ${escapeHtml(LAST_UPDATED_CELL_SHEET)}!${escapeHtml(LAST_UPDATED_CELL_RANGE)}`;
+        if (appsScriptPayload?.lastUpdated) {
+          els.notice.innerHTML = `<strong>同步完成：</strong>最後更新時間 ${escapeHtml(appsScriptPayload.lastUpdated)}`;
+        } else {
+          try {
+            const lastUpdatedText = await loadCellByJsonp(LAST_UPDATED_CELL_SHEET, LAST_UPDATED_CELL_RANGE);
+            if (lastUpdatedText) {
+              els.notice.innerHTML = `<strong>同步完成：</strong>最後更新時間 ${escapeHtml(lastUpdatedText)}`;
+            } else {
+              els.notice.innerHTML = `<strong>同步完成：</strong>最後更新時間未填寫，請檢查 ${escapeHtml(LAST_UPDATED_CELL_SHEET)}!${escapeHtml(LAST_UPDATED_CELL_RANGE)}`;
+            }
+          } catch (error) {
+            console.warn(error);
+            els.notice.innerHTML = `<strong>同步完成：</strong>最後更新時間讀取失敗，請檢查 ${escapeHtml(LAST_UPDATED_CELL_SHEET)}!${escapeHtml(LAST_UPDATED_CELL_RANGE)}`;
           }
-        } catch (error) {
-          console.warn(error);
-          els.notice.innerHTML = `<strong>同步完成：</strong>最後更新時間讀取失敗，請檢查 ${escapeHtml(LAST_UPDATED_CELL_SHEET)}!${escapeHtml(LAST_UPDATED_CELL_RANGE)}`;
         }
 
         applyFilters();

@@ -430,6 +430,7 @@
     tbody tr:nth-child(even) { background: #fffaf0; }
     tbody tr:hover { background: #fff0cf; }
 
+    .col-name { width: 220px; }
     .col-icon { width: 54px; }
     .col-id { width: 128px; }
     .col-level { width: 82px; }
@@ -886,7 +887,7 @@
      * const LAST_UPDATED_CELL_RANGE = "D1";
      */
     const LAST_UPDATED_CELL_SHEET = "首頁";
-    const LAST_UPDATED_CELL_RANGE = "B2";
+    const LAST_UPDATED_CELL_RANGE = "N22";
 
     /**
      * 如果你想直接抓取 Google Sheets「插入到儲存格內」的圖示，
@@ -895,7 +896,7 @@
      * 留空時：使用原本的 Google Sheets 公開資料讀取方式，只能讀文字/網址。
      * 填入時：改由 Apps Script 回傳資料，能讀取儲存格內的 CellImage 圖示。
      */
-    const APPS_SCRIPT_DATA_ENDPOINT = "https://script.google.com/macros/s/AKfycbxNsKBjGdoByijmqLBS6GwjEULK9g9JRX5OLFdB3cmjBp_EX9QsUM-Yegz4_gFJUs3Ipg/exec";
+    const APPS_SCRIPT_DATA_ENDPOINT = "";
 
     // Apps Script 第一次冷啟動、或需要轉換儲存格圖片時會比較慢。
     // 原本 20 秒容易誤判逾時，這裡改成 60 秒。
@@ -1496,6 +1497,7 @@
           <thead>
             <tr>
               <th class="col-icon">圖示</th>
+              <th class="col-name">道具名稱</th>
               <th>用途</th>
               <th class="col-source">分類</th>
               <th class="col-action">詳情</th>
@@ -1528,6 +1530,9 @@
       return `
         <tr>
           <td class="col-icon"><div class="icon-box">${icon}</div></td>
+          <td class="col-name">
+            <div class="item-name">${escapeHtml(name)}</div>
+          </td>
           <td>
             <div class="item-name">${escapeHtml(purpose || "尚無用途資料")}</div>
           </td>

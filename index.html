@@ -896,7 +896,7 @@
      * 留空時：使用原本的 Google Sheets 公開資料讀取方式，只能讀文字/網址。
      * 填入時：改由 Apps Script 回傳資料，能讀取儲存格內的 CellImage 圖示。
      */
-    const APPS_SCRIPT_DATA_ENDPOINT = "";
+    const APPS_SCRIPT_DATA_ENDPOINT = "https://script.google.com/macros/s/AKfycbxNsKBjGdoByijmqLBS6GwjEULK9g9JRX5OLFdB3cmjBp_EX9QsUM-Yegz4_gFJUs3Ipg/exec";
 
     // Apps Script 第一次冷啟動、或需要轉換儲存格圖片時會比較慢。
     // 原本 20 秒容易誤判逾時，這裡改成 60 秒。
